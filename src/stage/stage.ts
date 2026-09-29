@@ -9,15 +9,12 @@ import {
   LinearMipmapLinearFilter,
   Mesh,
   PerspectiveCamera,
-  PMREMGenerator,
   Scene,
   SRGBColorSpace,
   WebGLRenderer,
   type Object3D,
   Texture,
 } from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import type { Finish } from '../lib/brand';
 import { mixHex } from '../lib/contrast';
 import type { Plates } from '../label/cmyk';
@@ -26,7 +23,7 @@ import { LabelSurfaces, type SurfaceName } from '../label/surfaces';
 import { Can } from './can';
 import { CAN } from './dims';
 import { FrameMonitor, lower, TIERS, type Tier, type TierSettings } from './quality';
-import { createContactShadow, createLightRig, createSweep, PAPER } from './set';
+import { createContactShadow, createEnvironment, createLightRig, createSweep, PAPER } from './set';
 import { createState, damp, type StageState } from './state';
 
 export const FOV = 32;
@@ -166,16 +163,10 @@ export class Stage {
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.settings.dpr));
     this.resize();
 
-    if (this.settings.rectLights) RectAreaLightUniformsLib.init();
-    const pmrem = new PMREMGenerator(r);
-    const room = new RoomEnvironment();
-    this.scene.environment = pmrem.fromScene(room, 0.04).texture;
     this.scene.environmentIntensity = 0.85;
-    room.dispose();
-    pmrem.dispose();
 
     this.scene.add(this.sweep);
-    this.rig = createLightRig(this.settings.rectLights);
+    this.rig = createLightRig();
     this.scene.add(this.rig);
 
     this.can = new Can({
@@ -204,6 +195,7 @@ export class Stage {
 
   /** Compiles every shader off the main thread where supported, then renders once. */
   async warm(): Promise<void> {
+    this.scene.environment = await createEnvironment(this.renderer);
     await this.surfaces.setArt(null);
     this.surfaces.drawSleeve('blank');
     this.applyState(0);
@@ -562,6 +554,7 @@ export class Stage {
         fizz: 0,
         rise: 0,
         wash: 0,
+        tint: 0,
         ship: 0,
         spinWeight: 1,
       });

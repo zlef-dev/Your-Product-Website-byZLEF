@@ -48,12 +48,16 @@ export async function startStage(opts: {
   if (isSoftwareRenderer(gl)) tier = 'low';
   document.body.prepend(canvas);
 
+  performance.mark('stage:start');
   const stage = new Stage(canvas, gl, tier, opts.reducedMotion, opts.target);
   active = stage;
+  performance.mark('stage:constructed');
   opts.onReady('renderer');
   await stage.warm();
+  performance.mark('stage:compiled');
   opts.onReady('compiled');
   stage.onFirstFrame(() => {
+    performance.mark('stage:frame');
     canvas.classList.add('is-ready');
     opts.onReady('frame');
   });
@@ -69,16 +73,20 @@ export async function startStage(opts: {
   });
 
   let printedName = '';
+  let printing: Promise<void> = Promise.resolve();
   const view: CanView = {
-    async print(state: Readonly<BrandState>, o) {
+    print(state: Readonly<BrandState>, o) {
       printedName = state.name;
       stage.setBrandColour(state.colour);
-      await printer.print(toArt(state), { instant: o?.instant });
+      printing = printer.print(toArt(state), { instant: o?.instant });
+      return printing;
     },
     setFinish: (f) => stage.setFinish(f),
     turn: (deg, immediate) => stage.turn(deg, immediate),
     rotation: () => stage.rotation(),
     async snapshot() {
+      // Never capture a half-printed label.
+      await printing;
       const still = await stage.renderStill(CARD.width, CARD.height);
       return toPng(composeCard(still, printedName || stage.surfaces.printed()?.name || ''));
     },

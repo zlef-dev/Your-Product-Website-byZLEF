@@ -245,10 +245,12 @@ export async function startFallback(): Promise<CanView> {
   });
 
   let printedName = '';
+  let lastPrint: Promise<void> = Promise.resolve();
   return {
-    async print(state: Readonly<BrandState>, o) {
+    print(state: Readonly<BrandState>, o) {
       printedName = state.name;
-      await printer.print(toArt(state), { instant: o?.instant });
+      lastPrint = printer.print(toArt(state), { instant: o?.instant });
+      return lastPrint;
     },
     setFinish: (_f: Finish) => undefined,
     turn(deg: number) {
@@ -257,6 +259,7 @@ export async function startFallback(): Promise<CanView> {
     },
     rotation: () => ((Math.round(turn) % 360) + 360) % 360,
     async snapshot() {
+      await lastPrint;
       const c = document.createElement('canvas');
       c.width = CARD.width;
       c.height = CARD.height;

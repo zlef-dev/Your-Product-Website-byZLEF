@@ -11,7 +11,6 @@ export interface TierSettings {
   radialSegments: number;
   latheSegments: number;
   transmission: boolean;
-  rectLights: boolean;
   particles: number;
 }
 
@@ -23,7 +22,6 @@ export const TIERS: Record<Tier, TierSettings> = {
     radialSegments: 128,
     latheSegments: 96,
     transmission: true,
-    rectLights: true,
     particles: 200,
   },
   medium: {
@@ -33,7 +31,6 @@ export const TIERS: Record<Tier, TierSettings> = {
     radialSegments: 96,
     latheSegments: 72,
     transmission: false,
-    rectLights: true,
     particles: 120,
   },
   low: {
@@ -43,7 +40,6 @@ export const TIERS: Record<Tier, TierSettings> = {
     radialSegments: 64,
     latheSegments: 48,
     transmission: false,
-    rectLights: false,
     particles: 80,
   },
 };
