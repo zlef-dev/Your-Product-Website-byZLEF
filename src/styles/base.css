@@ -1,0 +1,302 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--paper);
+  color: var(--process-k);
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--paper);
+  color: var(--process-k);
+  font-family: var(--font);
+  font-size: var(--step-0);
+  font-weight: 400;
+  font-stretch: 100%;
+  line-height: 1.55;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+/* Paper grain: static feTurbulence noise at 3.5%, fixed over everything, never interactive. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.137 0 0 0 0 0.122 0 0 0 0 0.125 0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ol,
+ul,
+figure,
+fieldset {
+  margin: 0;
+}
+
+ol,
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ---------- Type ---------- */
+
+.display {
+  font-family: var(--font-display);
+  font-size: var(--display);
+  font-weight: 880;
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+
+.heading {
+  font-family: var(--font-display);
+  font-size: var(--heading);
+  font-weight: 850;
+  font-stretch: 115%;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+  text-wrap: balance;
+}
+
+.lede {
+  font-size: var(--step-1);
+  line-height: 1.4;
+  max-width: 34ch;
+  text-wrap: pretty;
+}
+
+p {
+  max-width: var(--measure);
+  text-wrap: pretty;
+}
+
+.smallprint,
+.field__label,
+.field__hint,
+.field__counter {
+  font-size: var(--step--1);
+  font-weight: 560;
+  font-stretch: 72%;
+  line-height: 1.35;
+  letter-spacing: 0.005em;
+}
+
+/* ---------- Buttons ---------- */
+
+.button {
+  --_bg: transparent;
+  --_fg: var(--process-k);
+  --_bd: var(--process-k);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  min-height: 48px;
+  min-width: var(--target);
+  padding: 0.5rem 1.25rem;
+  border: 2px solid var(--_bd);
+  border-radius: var(--radius);
+  background: var(--_bg);
+  color: var(--_fg);
+  font-weight: 640;
+  font-stretch: 100%;
+  font-size: var(--step-0);
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-ui) var(--ease-ui),
+    color var(--dur-ui) var(--ease-ui),
+    border-color var(--dur-ui) var(--ease-ui);
+}
+
+.button--brand {
+  --_bg: var(--brand);
+  --_fg: var(--brand-ink);
+  --_bd: var(--brand);
+}
+
+.button--line {
+  --_bg: var(--paper);
+}
+
+.button--small {
+  min-height: var(--target);
+  padding: 0.35rem 0.9rem;
+  font-size: var(--step--1);
+  font-weight: 620;
+}
+
+.button:hover {
+  --_bd: var(--process-k);
+}
+
+.button--line:hover {
+  --_bg: var(--paper-bright);
+}
+
+.button:active {
+  translate: 0 1px;
+}
+
+.button[disabled],
+.button[aria-disabled='true'] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/* ---------- Skip link ---------- */
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: var(--margin);
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 640;
+  text-decoration: none;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* ---------- Crop marks (proof scenes only) ---------- */
+
+.crop {
+  position: absolute;
+  inset: calc(var(--header-h) + 0.5rem) calc(var(--margin) * 0.5) 0.75rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.crop span {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* Each corner: a short horizontal and vertical line that stop 6px short of the trim. */
+.crop span::before,
+.crop span::after {
+  content: '';
+  position: absolute;
+  background: var(--process-k);
+}
+
+.crop span::before {
+  width: 18px;
+  height: 1px;
+}
+
+.crop span::after {
+  width: 1px;
+  height: 18px;
+}
+
+.crop span:nth-child(1) {
+  top: 0;
+  left: 0;
+}
+.crop span:nth-child(2) {
+  top: 0;
+  right: 0;
+}
+.crop span:nth-child(3) {
+  bottom: 0;
+  left: 0;
+}
+.crop span:nth-child(4) {
+  bottom: 0;
+  right: 0;
+}
+
+.crop span:nth-child(odd)::before {
+  right: 6px;
+}
+.crop span:nth-child(even)::before {
+  left: 6px;
+}
+.crop span:nth-child(-n + 2)::after {
+  bottom: 6px;
+}
+.crop span:nth-child(n + 3)::after {
+  top: 6px;
+}

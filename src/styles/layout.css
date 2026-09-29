@@ -1,0 +1,253 @@
+/* ---------- Stage canvas and fallbacks ---------- */
+
+.stage-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-ui);
+}
+
+.stage-canvas.is-ready {
+  opacity: 1;
+}
+
+.stage-canvas.is-hidden {
+  opacity: 0;
+  transition-duration: 0.35s;
+}
+
+main,
+.site-footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: var(--header-h);
+  padding-inline: var(--margin);
+  pointer-events: none;
+}
+
+.site-header > * {
+  pointer-events: auto;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding: 0.25rem 0.6rem;
+  margin-left: -0.6rem;
+  background: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: 820;
+  font-stretch: 118%;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-header__cta {
+  min-height: var(--target);
+  font-size: var(--step--1);
+  padding-inline: 1rem;
+}
+
+/* ---------- Press check (loader) ---------- */
+
+.press-check {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 45;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  height: 4px;
+  pointer-events: none;
+}
+
+.press-check span {
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.35s var(--ease-press);
+}
+
+.press-check span.is-set {
+  transform: scaleX(1);
+}
+
+.press-check.is-done {
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-ui) 0.15s;
+}
+
+.press-check.is-skipped {
+  display: none;
+}
+
+/* ---------- Progress strip and scene index ---------- */
+
+.progress {
+  position: fixed;
+  left: var(--margin);
+  bottom: 0.75rem;
+  z-index: 35;
+}
+
+.progress__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--target);
+  padding: 0.35rem 0.75rem 0.35rem 0.5rem;
+  margin-left: -0.5rem;
+  border: 0;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.progress__bar {
+  display: inline-flex;
+  border: var(--hairline);
+}
+
+.progress__patch {
+  position: relative;
+  width: 14px;
+  height: 18px;
+  overflow: hidden;
+}
+
+.progress__patch + .progress__patch {
+  border-left: var(--hairline);
+}
+
+.progress__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.progress__label {
+  font-size: var(--step--1);
+  font-weight: 560;
+  font-stretch: 72%;
+  white-space: nowrap;
+}
+
+.scene-index {
+  inset: auto auto 4.25rem var(--margin);
+  margin: 0;
+  padding: 0.5rem;
+  min-width: 17rem;
+  border: var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--process-k);
+}
+
+.scene-index::backdrop {
+  background: transparent;
+}
+
+.scene-index__list a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--target);
+  padding: 0.25rem 0.75rem;
+  text-decoration: none;
+  font-weight: 540;
+}
+
+.scene-index__list a:hover {
+  background: var(--paper-bright);
+  text-decoration: underline;
+}
+
+.scene-index__list a[aria-current='true'] {
+  font-weight: 760;
+}
+
+.scene-index__n {
+  width: 12px;
+  height: 16px;
+  background: var(--ink);
+  outline: var(--hairline);
+  flex: none;
+}
+
+@media (max-width: 767px) {
+  /* On phones the strip moves into the header row so it never sits on the try-it panel. */
+  .progress {
+    left: 50%;
+    top: calc((var(--header-h) - var(--target)) / 2);
+    bottom: auto;
+    translate: -50% 0;
+  }
+
+  .progress__toggle {
+    margin: 0;
+    padding-inline: 0.5rem;
+  }
+
+  .progress__patch {
+    width: 9px;
+    height: 14px;
+  }
+
+  .progress__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .scene-index {
+    inset: calc(var(--header-h) + 0.25rem) var(--margin) auto;
+    min-width: 0;
+  }
+}
+
+/* ---------- Scene grid ---------- */
+
+.scene {
+  position: relative;
+}
+
+.scene__inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding-inline: var(--margin);
+}
+
+.stage-slot {
+  position: relative;
+  min-height: 0;
+}
+
+/* Text that may sit over the 3D gets a paper backing. */
+.backed {
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  box-shadow: 0 0 0 0.75rem color-mix(in srgb, var(--paper) 90%, transparent);
+}

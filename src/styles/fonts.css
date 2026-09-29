@@ -1,0 +1,23 @@
+/*
+ * Archivo Variable is self-hosted through Fontsource (wdth.css exposes wght 100–900 and
+ * wdth 62–125). These local fallbacks are metric-matched with size-adjust and the
+ * ascent/descent overrides so the swap to Archivo doesn't move the layout.
+ * Values measured with scripts/font-metrics.mjs.
+ */
+@font-face {
+  font-family: 'Archivo Fallback';
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Helvetica');
+  size-adjust: 97.5%;
+  ascent-override: 90%;
+  descent-override: 21.5%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Archivo Display Fallback';
+  src: local('Arial Black'), local('Arial-Black'), local('Arial Bold'), local('Arial-BoldMT');
+  size-adjust: 96%;
+  ascent-override: 91.5%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
