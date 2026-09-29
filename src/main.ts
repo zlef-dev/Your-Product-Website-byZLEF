@@ -64,10 +64,15 @@ void import('./stage/index')
       },
     }),
   )
-  .then((handle) => {
+  .then(async (handle) => {
     if (handle) {
       setCanView(handle.view);
       director.attach(handle.link);
+    } else {
+      // No WebGL: an SVG can with the label drawn flat inside; everything else still works.
+      const { startFallback } = await import('./ui/fallback-2d');
+      setCanView(await startFallback());
+      finishIntro();
     }
     if (new URLSearchParams(location.search).has('debug')) {
       void import('./debug/debug').then((m) => m.startDebug(handle?.stage ?? null));
