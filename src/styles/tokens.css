@@ -1,0 +1,80 @@
+/*
+ * Design tokens. Packaging prepress: coated paper, process inks, raw aluminium.
+ *
+ * Type scale: one modular scale, ratio 1.25 (major third), base 1.0625rem (17px).
+ *   --step--1  0.85rem   small print, field labels (condensed)
+ *   --step-0   1.0625rem body
+ *   --step-1   1.328rem  lede
+ *   --step-2   1.66rem   step titles, list terms on mobile
+ *   --step-3   2.075rem
+ *   --step-4   2.594rem  list terms
+ *   --step-5   3.242rem
+ *   --step-6   4.053rem  scene headings (upper bound)
+ *   --step-7   5.066rem
+ * Display (H1) sits outside the scale: clamp(3rem, 9vw, 9.5rem), the brief's hero size.
+ */
+:root {
+  /* Paper and inks */
+  --paper: #f1f2ee;
+  --paper-bright: #f7f8f4;
+  --process-k: #231f20;
+  --process-c: #00aeef;
+  --process-m: #ec008c;
+  --process-y: #fff200;
+  --alu: #c8ccd0;
+
+  /* Visitor brand (updated at runtime by the takeover). */
+  --brand: var(--process-k);
+  --brand-ink: #ffffff;
+  /* --brand when it reads on paper at 4.5:1, otherwise process black. */
+  --brand-on-paper: var(--process-k);
+  /* Focus ring: --brand when it reaches 3:1 on paper, otherwise process black. */
+  --focus: var(--process-k);
+
+  /* Lines */
+  --hairline: 1px solid var(--process-k);
+  --rule: 1.5px solid var(--process-k);
+
+  /* Type */
+  --font: 'Archivo Variable', 'Archivo Fallback', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Archivo Variable', 'Archivo Display Fallback', 'Arial Black', Arial, sans-serif;
+  --step--1: 0.85rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.328rem;
+  --step-2: 1.66rem;
+  --step-3: 2.075rem;
+  --step-4: 2.594rem;
+  --step-5: 3.242rem;
+  --step-6: 4.053rem;
+  --step-7: 5.066rem;
+  --display: clamp(3rem, 9vw, 9.5rem);
+  --heading: clamp(2.594rem, 5.2vw, 5.066rem);
+  --measure: 65ch;
+
+  /* Layout */
+  --margin: clamp(1rem, 4vw, 4rem);
+  --gutter: clamp(0.75rem, 1.6vw, 1.5rem);
+  --columns: 4;
+  --header-h: 4.5rem;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+  --space-5: 4rem;
+  --space-6: 6.5rem;
+  --radius: 2px;
+  --target: 44px;
+
+  /* Motion */
+  --ease-press: cubic-bezier(0.7, 0, 0.2, 1);
+  --ease-glide: cubic-bezier(0.33, 0, 0.2, 1);
+  --ease-ui: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --dur-ui: 0.3s;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --columns: 12;
+    --header-h: 5rem;
+  }
+}

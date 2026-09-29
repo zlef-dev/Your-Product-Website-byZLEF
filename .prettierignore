@@ -1,0 +1,8 @@
+dist
+dist-e2e
+dist-e2e-nokey
+node_modules
+qa
+public
+package-lock.json
+BRIEF.md

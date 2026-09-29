@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-e2e
+dist-e2e-nokey
+.env
+.env.local
+test-results
+playwright-report
+qa/bundle.html
+*.log
