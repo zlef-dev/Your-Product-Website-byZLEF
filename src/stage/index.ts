@@ -105,8 +105,12 @@ export async function startStage(opts: {
     },
   };
 
-  // Have the line-up ready well before scene 3 so its first reveal doesn't hitch.
-  void idle(4000).then(() => loadExtras(stage));
+  // Then, in idle time: the hidden parts' shaders, and the line-up well before scene 3,
+  // so no later reveal hitches.
+  void idle(2000)
+    .then(() => stage.compileRest())
+    .then(() => idle(4000))
+    .then(() => loadExtras(stage));
 
   addEventListener('pagehide', () => stage.dispose(), { once: true });
   return { stage, view, link };

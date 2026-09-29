@@ -130,13 +130,16 @@ export class LabelSurfaces {
     }
   }
 
+  /** Redraws one dirty surface per frame, so a new print never costs one long frame. */
   private schedule(): void {
     if (this.raf) return;
     this.raf = requestAnimationFrame(() => {
       this.raf = 0;
-      const names = [...this.dirty];
-      this.dirty.clear();
-      names.forEach((n) => this.drawNow(n));
+      const next = this.dirty.values().next();
+      if (next.done) return;
+      this.dirty.delete(next.value);
+      this.drawNow(next.value);
+      if (this.dirty.size) this.schedule();
     });
   }
 

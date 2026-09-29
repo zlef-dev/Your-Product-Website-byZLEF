@@ -154,8 +154,8 @@ export function createContactShadow(width: number, depth: number, strength = 1):
  * main thread on load; this needs only PMREM's small shaders.
  */
 export async function createEnvironment(renderer: WebGLRenderer): Promise<Texture> {
-  const w = 256;
-  const h = 128;
+  const w = 128;
+  const h = 64;
   const data = new Uint16Array(w * h * 4);
   // Strip azimuths in three's equirect u (u = atan2(z, x) / 2π + 0.5), camera side is +z.
   const strips = [
@@ -221,7 +221,11 @@ interface PmremInternals {
  * KHR_parallel_shader_compile, off the main thread, so the bake itself doesn't block.
  * (This reaches into two private members; checked against three r186.)
  */
-async function precompilePmrem(renderer: WebGLRenderer, pmrem: PMREMGenerator, cubeSize: number): Promise<void> {
+async function precompilePmrem(
+  renderer: WebGLRenderer,
+  pmrem: PMREMGenerator,
+  cubeSize: number,
+): Promise<void> {
   try {
     const p = pmrem as unknown as PmremInternals;
     p._setSize(cubeSize);

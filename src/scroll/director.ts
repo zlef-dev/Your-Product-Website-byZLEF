@@ -157,11 +157,14 @@ export function initDirector(opts: {
   ScrollTrigger.config({ ignoreMobileResize: true });
   const mm = gsap.matchMedia();
 
+  // After first paint, in its own task: pins and timelines aren't needed to read the hero.
   // `any` always matches: gsap.matchMedia only runs the callback while some condition does.
-  mm.add({ any: '(min-width: 0px)', wide: wideQuery, reduce: reducedMotionQuery }, (ctx) => {
-    const { wide, reduce } = ctx.conditions as { wide: boolean; reduce: boolean };
-    return reduce ? staticScenes(wide) : scrollScenes(wide);
-  });
+  setTimeout(() => {
+    mm.add({ any: '(min-width: 0px)', wide: wideQuery, reduce: reducedMotionQuery }, (ctx) => {
+      const { wide, reduce } = ctx.conditions as { wide: boolean; reduce: boolean };
+      return reduce ? staticScenes(wide) : scrollScenes(wide);
+    });
+  }, 0);
 
   // ---------- Motion: Lenis, pins and the master timeline ----------
 
@@ -402,8 +405,13 @@ export function initDirector(opts: {
     // A reload mid-page starts at the right moment instead of replaying from the top.
     proxy.time = timeFor(scrollY);
     tl.time(Math.min(proxy.time, tl.duration()));
-    const progress = initProgress();
-    const split = initSplit();
+    // The progress strip and heading reveals set up in their own tasks, after the pins.
+    let progress = () => {};
+    let split = () => {};
+    const later = [
+      setTimeout(() => (progress = initProgress()), 0),
+      setTimeout(() => (split = initSplit()), 40),
+    ];
 
     setScrollImpl((el, done) => {
       const st = ScrollTrigger.getAll().find((s) => s.trigger === el && s.pin);
@@ -415,6 +423,7 @@ export function initDirector(opts: {
     void document.fonts.ready.then(() => ScrollTrigger.refresh());
 
     return () => {
+      later.forEach(clearTimeout);
       ScrollTrigger.removeEventListener('refresh', build);
       master.kill();
       tl.kill();

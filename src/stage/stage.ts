@@ -12,6 +12,7 @@ import {
   Scene,
   SRGBColorSpace,
   WebGLRenderer,
+  type Material,
   type Object3D,
   Texture,
 } from 'three';
@@ -59,6 +60,9 @@ export function probeWebGL(canvas: HTMLCanvasElement, antialias: boolean): WebGL
     return null;
   }
 }
+
+/** Lets the browser handle input and paint between setup steps. */
+const yieldTask = () => new Promise<void>((r) => setTimeout(r, 0));
 
 /** Reads the default framebuffer through a pixel buffer and a fence (WebGL2, no stall). */
 function readPixelsAsync(gl: WebGL2RenderingContext, w: number, h: number): Promise<Uint8Array> {
@@ -129,6 +133,9 @@ export class Stage {
   private firstFrame: (() => void) | null = null;
   private shadowOffset = 0;
   private disposed = false;
+  private compiled = new WeakSet<Material>();
+  /** No frames until warm() has compiled everything (a frame would compile synchronously). */
+  private warming = true;
   private snap = false;
   tier: Tier;
 
@@ -155,7 +162,6 @@ export class Stage {
     // Khronos PBR Neutral keeps label colours closest to the visitor's --brand (see DECISIONS.md).
     r.toneMapping = NeutralToneMapping;
     r.toneMappingExposure = 1;
-    r.localClippingEnabled = true;
     // Production skips the synchronous shader status checks: faster compiles, and D3D11's
     // harmless HLSL compiler notes don't surface as console warnings.
     r.debug.checkShaderErrors = import.meta.env.DEV;
@@ -172,7 +178,6 @@ export class Stage {
     this.can = new Can({
       latheSegments: this.settings.latheSegments,
       radialSegments: this.settings.radialSegments,
-      anisotropy: tier !== 'low',
       rows: canRows,
     });
     this.scene.add(this.can.group);
@@ -193,25 +198,61 @@ export class Stage {
 
   // ---------- Setup ----------
 
-  /** Compiles every shader off the main thread where supported, then renders once. */
+  /**
+   * Gets everything ready for the first frame in small steps (each its own task, so the
+   * page stays responsive): the environment, the blank label, then every shader.
+   */
   async warm(): Promise<void> {
     this.scene.environment = await createEnvironment(this.renderer);
+    await yieldTask();
     await this.surfaces.setArt(null);
     this.surfaces.drawSleeve('blank');
     this.applyState(0);
+    await yieldTask();
     await this.compile();
+    this.warming = false;
   }
 
   /**
-   * Compiles shaders without blocking where KHR_parallel_shader_compile exists. Without it
-   * (three.js would warn) the first render compiles them instead.
+   * Compiles shaders without blocking where KHR_parallel_shader_compile exists, one
+   * material at a time so no single task is long. Without the extension (three.js would
+   * warn) the first render compiles them instead.
    */
-  compile(): Promise<void> {
-    if (!this.renderer.extensions.has('KHR_parallel_shader_compile')) return Promise.resolve();
-    return this.renderer.compileAsync(this.scene, this.camera).then(
-      () => undefined,
-      () => undefined,
-    );
+  async compile(which: 'visible' | 'hidden' | 'all' = 'visible'): Promise<void> {
+    if (!this.renderer.extensions.has('KHR_parallel_shader_compile')) return;
+    const objects: Object3D[] = [];
+    // Hidden objects (wireframe, overlay, line-up, fizz) compile after the first frame, so
+    // later scenes never hitch and the can still appears as early as possible.
+    this.scene.traverse((o) => {
+      const m = (o as Mesh).material as Material | undefined;
+      if (!m || this.compiled.has(m)) return;
+      let shown = true;
+      o.traverseAncestors((a) => (shown &&= a.visible));
+      if (which === 'visible' && !(shown && o.visible)) return;
+      if (which === 'hidden' && shown && o.visible) return;
+      this.compiled.add(m);
+      objects.push(o);
+    });
+    // Start every compile (each call is cheap), then wait for all of them to finish in
+    // parallel, polling their status without blocking.
+    const pending: Material[] = [];
+    for (const o of objects) {
+      try {
+        this.renderer.compile(o, this.camera, this.scene).forEach((m) => pending.push(m));
+      } catch {
+        // An optimisation only; the first render compiles anything left.
+      }
+    }
+    type ProgramProps = { currentProgram?: { isReady(): boolean } };
+    const ready = (m: Material) =>
+      (this.renderer.properties.get(m) as ProgramProps).currentProgram?.isReady() ?? true;
+    for (let i = 0; i < 400 && pending.some((m) => !ready(m)); i++)
+      await new Promise((r) => setTimeout(r, 16));
+  }
+
+  /** After the first frame: compile everything still hidden, a little at a time. */
+  compileRest(): Promise<void> {
+    return this.compile('hidden');
   }
 
   onFirstFrame(cb: () => void): void {
@@ -239,7 +280,7 @@ export class Stage {
     lineup.setBrandColour(this.brand);
     lineup.setTransmission(this.settings.transmission);
     this.scene.add(lineup.group);
-    void this.compile().then(() => this.invalidate());
+    void this.compile('all').then(() => this.invalidate());
   }
 
   hasLineup(): boolean {
@@ -344,7 +385,7 @@ export class Stage {
   // ---------- Loop ----------
 
   invalidate(): void {
-    if (this.running || this.disposed || !this.visible || document.hidden) return;
+    if (this.warming || this.running || this.disposed || !this.visible || document.hidden) return;
     this.running = true;
     this.lastT = performance.now();
     this.renderer.setAnimationLoop(this.tick);

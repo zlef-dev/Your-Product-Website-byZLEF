@@ -1,0 +1,65 @@
+{
+  "date": "2026-09-29T19:58:34.954Z",
+  "viewport": "1440x900",
+  "gpu": [
+    "--enable-gpu",
+    "--ignore-gpu-blocklist",
+    "--use-angle=d3d11"
+  ],
+  "results": {
+    "1x": {
+      "frames": 835,
+      "p50": 16.7,
+      "p95": 16.8,
+      "p99": 16.8,
+      "worst": 283.3,
+      "over33ms": 3,
+      "over50ms": 2,
+      "hitches": [
+        {
+          "scrollY": 324,
+          "ms": 217
+        },
+        {
+          "scrollY": 2854,
+          "ms": 283
+        }
+      ]
+    },
+    "4x": {
+      "frames": 811,
+      "p50": 16.7,
+      "p95": 16.8,
+      "p99": 33.4,
+      "worst": 716.6,
+      "over33ms": 11,
+      "over50ms": 6,
+      "hitches": [
+        {
+          "scrollY": 2412,
+          "ms": 133
+        },
+        {
+          "scrollY": 2438,
+          "ms": 50
+        },
+        {
+          "scrollY": 2878,
+          "ms": 717
+        },
+        {
+          "scrollY": 2994,
+          "ms": 517
+        },
+        {
+          "scrollY": 2996,
+          "ms": 67
+        },
+        {
+          "scrollY": 7367,
+          "ms": 117
+        }
+      ]
+    }
+  }
+}

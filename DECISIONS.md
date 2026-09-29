@@ -57,3 +57,15 @@ One line of reasoning per judgement call. Newest at the bottom of each section.
 - **Without WebGL the 404 page shows the headline and button alone.** The page's job is to get people back to the shelf, and the squeezed headline carries the joke.
 - **The no-WebGL can is an SVG silhouette with the label projected cylindrically into a canvas inside it.** Each output column samples the angle asin(x / r) of the wrapped label, so the flat 2D can still turns with the Turn buttons, the print run composites the same plate timeline on a canvas, and "Download your can" draws the same can into the PNG. S4 shows the flat dieline in the fallback; S3 keeps its captions.
 - **Short landscape screens use the phone placement for the progress strip** (in the header) and the try-it panel aligns with `safe center`, so controls taller than the screen start at the top and scroll instead of being cut off.
+
+## Performance
+
+- **No RectAreaLights: the strip softboxes live in the environment.** `RectAreaLightTexturesLib` alone was 104 KB gzipped (a third of the JS budget); two hot vertical strips in the reflection environment give the same highlight bands down the can, and directional lights handle the diffuse side.
+- **A procedural HDR studio instead of rendering RoomEnvironment.** RoomEnvironment's lit materials compiled synchronously inside PMREM and cost ~1 s of main thread; a 128×64 half-float equirect (walls, ceiling softbox, two strips) needs only PMREM's small shaders.
+- **PMREM's filter shaders are precompiled with `compileAsync`, with 32 GGX samples instead of 256.** The 256-sample loop took D3D11's HLSL compiler most of a second; this environment is smooth, so 32 samples look the same. It reaches into two private PMREMGenerator members (checked against r186) and falls back to the normal path if they change.
+- **Reveals use a uniform-driven discard, not three.js clipping planes.** `compileAsync` can't precompile clipped programs (clipping state is set per object during a render), so every clipped material compiled synchronously on first use.
+- **No anisotropy on the can body.** The brief asks for it "if it looks right"; without it the body, lid and ring-pull share one program, and the strip reflections already read as brushed aluminium.
+- **Nothing renders until the shaders are compiled.** Drawing the blank label used to start the render loop mid-warm-up, which compiled every shader synchronously in one 500 ms task. Visible materials compile in parallel first; hidden ones (wireframe, overlay, line-up, fizz) compile in idle time after the first frame.
+- **The scroll director and the stage boot in several small tasks** (pins, then the progress strip, then the heading reveals; environment, label, shaders), so no single task blocks input for long.
+- **Print-run plates are at most 1024 px wide on every tier.** They're on screen for about a second, in motion; a quarter of the pixels keeps separation and upload out of the frame budget, and the exact full-size artwork still swaps in at the end.
+- **Label surfaces redraw one per frame** after a print, instead of all four line-up labels in one frame.

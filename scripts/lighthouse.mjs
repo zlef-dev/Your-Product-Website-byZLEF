@@ -50,7 +50,13 @@ for (const preset of ['desktop', 'mobile']) {
     SI: lhr.audits['speed-index'].displayValue,
   };
   const failing = Object.values(lhr.audits)
-    .filter((a) => a.score !== null && a.score < 0.9 && a.scoreDisplayMode !== 'informative' && a.scoreDisplayMode !== 'manual')
+    .filter(
+      (a) =>
+        a.score !== null &&
+        a.score < 0.9 &&
+        a.scoreDisplayMode !== 'informative' &&
+        a.scoreDisplayMode !== 'manual',
+    )
     .map((a) => `${a.id} (${a.score})`);
   console.log(`\n${preset}:`, summary[preset]);
   if (failing.length) console.log('  below 0.9:', failing.join(', '));

@@ -19,7 +19,6 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
-  Plane,
   BufferGeometry,
   TorusGeometry,
   DataTexture,
@@ -27,7 +26,6 @@ import {
   RGBAFormat,
   SRGBColorSpace,
   Vector2,
-  Vector3,
   Vector4,
   type Texture,
 } from 'three';
@@ -37,6 +35,7 @@ import type { Plates } from '../label/cmyk';
 import { ALU } from '../label/draw';
 import type { PlateFrame } from '../label/print-run';
 import { CAN, SLEEVE_HEIGHT, SLEEVE_RADIUS } from './dims';
+import { addHeightClip, type HeightClip } from './clip';
 import { applyUnwrap } from './unwrap';
 
 /** Profile (radius, height) from the centre of the domed base to the inside of the rim. */
@@ -125,9 +124,8 @@ export class Can {
   readonly wire: LineSegments<EdgesGeometry, LineBasicMaterial>;
 
   /** Solid metal shows below this plane (world y); the wire shows above it. */
-  readonly solidPlane = new Plane(new Vector3(0, -1, 0), 10);
-  readonly wirePlane = new Plane(new Vector3(0, 1, 0), -10);
-  readonly labelPlane = new Plane(new Vector3(0, -1, 0), 10);
+  readonly solidClip: HeightClip = { value: 10 };
+  readonly labelClip: HeightClip = { value: 10 };
 
   /** Print run: four plates composited over bare stock inside the label shader. */
   readonly print = {
@@ -157,7 +155,6 @@ export class Can {
   constructor(opts: {
     latheSegments: number;
     radialSegments: number;
-    anisotropy: boolean;
     /** Extra rows along the wall and label, for deforming (the 404 crush). */
     rows?: number;
   }) {
@@ -171,14 +168,9 @@ export class Can {
       color: new Color('#D7DADD'),
       metalness: 1,
       roughness: 0.28,
-      anisotropy: opts.anisotropy ? 0.4 : 0,
-      anisotropyRotation: Math.PI / 2,
-      clippingPlanes: [this.solidPlane],
       envMapIntensity: 1,
     });
     const bodyGeo = new LatheGeometry(profile, opts.latheSegments);
-    // Real tangents: derivative-based ones facet the anisotropic reflections per triangle.
-    if (opts.anisotropy) bodyGeo.computeTangents();
     this.body = new Mesh(bodyGeo, bodyMat);
     this.body.name = 'can-body';
     this.spinner.add(this.body);
@@ -188,7 +180,6 @@ export class Can {
       color: new Color('#C4C8CC'),
       metalness: 1,
       roughness: 0.36,
-      clippingPlanes: [this.solidPlane],
     });
     const lid = new Mesh(new CircleGeometry(0.271, opts.latheSegments), lidMat);
     lid.rotation.x = -Math.PI / 2;
@@ -198,7 +189,7 @@ export class Can {
     ring.position.y = LID_Y + 0.001;
     this.lidGroup.add(lid, ring);
 
-    const scoreMat = new LineBasicMaterial({ color: '#8C9095', clippingPlanes: [this.solidPlane] });
+    const scoreMat = new LineBasicMaterial({ color: '#8C9095' });
     const score = new LineLoop(tearPanel(), scoreMat);
     score.position.y = LID_Y + 0.0015;
     this.lidGroup.add(score);
@@ -207,7 +198,6 @@ export class Can {
       color: new Color('#CDD1D5'),
       metalness: 1,
       roughness: 0.3,
-      clippingPlanes: [this.solidPlane],
     });
     const rivet = new Mesh(new CircleGeometry(0.018, 20), pullMat);
     rivet.rotation.x = -Math.PI / 2;
@@ -251,14 +241,21 @@ export class Can {
       clearcoat: 0.001,
       clearcoatRoughness: 0.1,
       side: DoubleSide,
-      clippingPlanes: [this.labelPlane],
     });
-    labelMat.onBeforeCompile = (shader) => {
+    addHeightClip(labelMat, this.labelClip, 1, 'can-label', (shader) => {
       Object.assign(shader.uniforms, this.print);
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <map_pars_fragment>', `#include <map_pars_fragment>\n${PRINT_PARS}`)
-        .replace('#include <map_fragment>', `#include <map_fragment>\n${PRINT_FRAGMENT}`);
-    };
+        .replace(
+          '#include <map_pars_fragment>',
+          `#include <map_pars_fragment>
+${PRINT_PARS}`,
+        )
+        .replace(
+          '#include <map_fragment>',
+          `#include <map_fragment>
+${PRINT_FRAGMENT}`,
+        );
+    });
     this.sleeve = new Mesh(sleeveGeo, labelMat);
     this.sleeve.name = 'can-label';
     this.sleeve.renderOrder = 1;
@@ -286,12 +283,18 @@ export class Can {
       color: '#231F20',
       transparent: true,
       opacity: 0,
-      clippingPlanes: [this.wirePlane],
     });
     this.wire = new LineSegments(new EdgesGeometry(wireLathe, 10), wireMat);
     wireLathe.dispose();
     this.wire.visible = false;
     this.spinner.add(this.wire);
+
+    // Solid metal shows below the build line; the wireframe shows above it.
+    addHeightClip(bodyMat, this.solidClip, 1, 'can-metal');
+    addHeightClip(lidMat, this.solidClip, 1, 'can-metal');
+    addHeightClip(pullMat, this.solidClip, 1, 'can-metal');
+    addHeightClip(scoreMat, this.solidClip, 1, 'can-score');
+    addHeightClip(wireMat, this.solidClip, -1, 'can-wire');
 
     this.materials = [bodyMat, lidMat, scoreMat, pullMat, labelMat, overlayMat, wireMat];
     this.setFinish('gloss');
@@ -434,10 +437,9 @@ export class Can {
     const base = this.group.position.y;
     const top = CAN.height + 0.02;
     const solidY = base - 0.01 + solid * (top + 0.02);
-    this.solidPlane.constant = solidY;
-    this.wirePlane.constant = -solidY;
+    this.solidClip.value = solidY;
     const labelY = base + CAN.wallBottom - 0.01 + label * (SLEEVE_HEIGHT + 0.02);
-    this.labelPlane.constant = labelY;
+    this.labelClip.value = labelY;
     this.wire.visible = wire > 0.001 && solid < 0.999;
     this.wire.material.opacity = wire;
     this.body.visible = solid > 0.001;

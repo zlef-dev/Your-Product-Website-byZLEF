@@ -14,6 +14,7 @@ import { separatePlates } from './separate';
 import type { LabelSurfaces } from './surfaces';
 
 export const PRINT_MS = 1100;
+const PLATE_WIDTH = 1024;
 
 /** Where each plate lands out of register, in px at a 2048 px wide sleeve (C, M, Y, K). */
 const MISREGISTER: Array<[number, number]> = [
@@ -93,10 +94,19 @@ export class Printer {
     t.setPlateFrame!(start);
     t.setInk(0);
     s.drawSleeve('final');
-    const pixels = s.sleeve.ctx.getImageData(0, 0, s.sleeve.width, s.sleeve.height).data;
-    const plates = await separatePlates(pixels);
+    // Plates run at most 1024 px wide: they're on screen for a second, moving, and a quarter
+    // of the pixels keeps separation and upload off the frame budget. The exact full-size
+    // artwork swaps in at the end.
+    const pw = Math.min(PLATE_WIDTH, s.sleeve.width);
+    const ph = Math.round((s.sleeve.height * pw) / s.sleeve.width);
+    const small = document.createElement('canvas');
+    small.width = pw;
+    small.height = ph;
+    const sctx = small.getContext('2d', { willReadFrequently: true })!;
+    sctx.drawImage(s.sleeve.canvas, 0, 0, pw, ph);
+    const plates = await separatePlates(sctx.getImageData(0, 0, pw, ph).data);
     if (id !== this.run) return;
-    t.showPlates!(plates, s.sleeve.width, s.sleeve.height);
+    t.showPlates!(plates, pw, ph);
 
     t.hold(true);
     await new Promise<void>((resolve) => {
