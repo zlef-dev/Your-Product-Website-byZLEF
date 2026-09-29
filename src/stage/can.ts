@@ -22,12 +22,20 @@ import {
   Plane,
   BufferGeometry,
   TorusGeometry,
+  DataTexture,
+  LinearFilter,
+  RGBAFormat,
+  SRGBColorSpace,
   Vector2,
   Vector3,
+  Vector4,
   type Texture,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { Finish } from '../lib/brand';
+import type { Plates } from '../label/cmyk';
+import { ALU } from '../label/draw';
+import type { PlateFrame } from '../label/print-run';
 import { CAN, SLEEVE_HEIGHT, SLEEVE_RADIUS } from './dims';
 import { applyUnwrap } from './unwrap';
 
@@ -68,6 +76,33 @@ export const CAN_PROFILE: Array<[number, number]> = [
 
 const LID_Y = 1.204;
 
+const PRINT_PARS = /* glsl */ `
+uniform float uPrinting;
+uniform float uFinal;
+uniform vec4 uAlpha;
+uniform vec4 uOffA;
+uniform vec4 uOffB;
+uniform vec3 uBase;
+uniform sampler2D uPlateC;
+uniform sampler2D uPlateM;
+uniform sampler2D uPlateY;
+uniform sampler2D uPlateK;`;
+
+/** Plates multiply over bare stock, each with its own offset and opacity. */
+const PRINT_FRAGMENT = /* glsl */ `
+#ifdef USE_MAP
+if ( uPrinting > 0.5 ) {
+  vec3 plates = vec3( 1.0 );
+  plates *= mix( vec3( 1.0 ), texture2D( uPlateC, vMapUv - uOffA.xy ).rgb, uAlpha.x );
+  plates *= mix( vec3( 1.0 ), texture2D( uPlateM, vMapUv - uOffA.zw ).rgb, uAlpha.y );
+  plates *= mix( vec3( 1.0 ), texture2D( uPlateY, vMapUv - uOffB.xy ).rgb, uAlpha.z );
+  plates *= mix( vec3( 1.0 ), texture2D( uPlateK, vMapUv - uOffB.zw ).rgb, uAlpha.w );
+  diffuseColor.rgb = mix( uBase * plates, diffuseColor.rgb, uFinal );
+}
+#endif
+// The inside of the label is plain white stock, not a mirror image of the print.
+if ( ! gl_FrontFacing ) diffuseColor.rgb = vec3( 0.86, 0.86, 0.84 );`;
+
 export const FINISHES: Record<Finish, { roughness: number; clearcoat: number; clearcoatRoughness: number }> =
   {
     gloss: { roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.06 },
@@ -93,6 +128,24 @@ export class Can {
   readonly solidPlane = new Plane(new Vector3(0, -1, 0), 10);
   readonly wirePlane = new Plane(new Vector3(0, 1, 0), -10);
   readonly labelPlane = new Plane(new Vector3(0, -1, 0), 10);
+
+  /** Print run: four plates composited over bare stock inside the label shader. */
+  readonly print = {
+    uPrinting: { value: 0 },
+    uFinal: { value: 1 },
+    uAlpha: { value: new Vector4() },
+    uOffA: { value: new Vector4() },
+    uOffB: { value: new Vector4() },
+    uBase: { value: new Color(ALU) },
+    uPlateC: { value: null as Texture | null },
+    uPlateM: { value: null as Texture | null },
+    uPlateY: { value: null as Texture | null },
+    uPlateK: { value: null as Texture | null },
+  };
+  private plateTex: DataTexture[] = [];
+  private plateData: Plates | null = null;
+  private plateUploaded = [false, false, false, false];
+  private plateSize = { w: 1, h: 1 };
 
   private thetas: Float32Array;
   private ys: Float32Array;
@@ -193,12 +246,11 @@ export class Can {
       side: DoubleSide,
       clippingPlanes: [this.labelPlane],
     });
-    // The inside of the label is plain white stock, not a mirror image of the print.
     labelMat.onBeforeCompile = (shader) => {
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <map_fragment>',
-        '#include <map_fragment>\n\tif ( ! gl_FrontFacing ) diffuseColor.rgb = vec3( 0.86, 0.86, 0.84 );',
-      );
+      Object.assign(shader.uniforms, this.print);
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <map_pars_fragment>', `#include <map_pars_fragment>\n${PRINT_PARS}`)
+        .replace('#include <map_fragment>', `#include <map_fragment>\n${PRINT_FRAGMENT}`);
     };
     this.sleeve = new Mesh(sleeveGeo, labelMat);
     this.sleeve.name = 'can-label';
@@ -275,6 +327,64 @@ export class Can {
     m.clearcoatRoughness = f.clearcoatRoughness;
   }
 
+  /** Plates for the current print run arrive (null ends the run and shows the artwork). */
+  setPlates(plates: Plates | null, width: number, height: number): void {
+    if (!plates) {
+      this.print.uPrinting.value = 0;
+      this.print.uFinal.value = 1;
+      this.plateData = null;
+      return;
+    }
+    this.plateData = plates;
+    this.plateSize = { w: width, h: height };
+    this.plateUploaded = [false, false, false, false];
+  }
+
+  /** One frame of the print run. Each plate uploads the first time it becomes visible. */
+  setPlateFrame(f: PlateFrame): void {
+    const u = this.print;
+    u.uPrinting.value = 1;
+    u.uFinal.value = f.final;
+    u.uAlpha.value.set(...f.alpha);
+    const { w, h } = this.plateSize;
+    const o = f.offset;
+    u.uOffA.value.set((o[0]?.[0] ?? 0) / w, (o[0]?.[1] ?? 0) / h, (o[1]?.[0] ?? 0) / w, (o[1]?.[1] ?? 0) / h);
+    u.uOffB.value.set((o[2]?.[0] ?? 0) / w, (o[2]?.[1] ?? 0) / h, (o[3]?.[0] ?? 0) / w, (o[3]?.[1] ?? 0) / h);
+    const data = this.plateData;
+    if (!data) {
+      u.uAlpha.value.set(0, 0, 0, 0);
+      return;
+    }
+    const names = ['c', 'm', 'y', 'k'] as const;
+    const slots = [u.uPlateC, u.uPlateM, u.uPlateY, u.uPlateK];
+    names.forEach((n, i) => {
+      if (this.plateUploaded[i] || f.alpha[i]! <= 0) return;
+      this.plateUploaded[i] = true;
+      const pixels = new Uint8Array(data[n].buffer, data[n].byteOffset, data[n].byteLength);
+      let tex = this.plateTex[i];
+      if (!tex || tex.image.width !== w || tex.image.height !== h) {
+        tex?.dispose();
+        tex = new DataTexture(pixels, w, h, RGBAFormat);
+        tex.colorSpace = SRGBColorSpace;
+        tex.minFilter = LinearFilter;
+        tex.magFilter = LinearFilter;
+        tex.generateMipmaps = false;
+        this.plateTex[i] = tex;
+      } else {
+        tex.image.data = pixels;
+      }
+      tex.needsUpdate = true;
+      slots[i]!.value = tex;
+    });
+    // A plate that hasn't uploaded yet must not print as black.
+    u.uAlpha.value.set(
+      this.plateUploaded[0] ? f.alpha[0] : 0,
+      this.plateUploaded[1] ? f.alpha[1] : 0,
+      this.plateUploaded[2] ? f.alpha[2] : 0,
+      this.plateUploaded[3] ? f.alpha[3] : 0,
+    );
+  }
+
   /** Recomputes the sleeve for unwrap progress 0–1 (a few hundred vertices, on the CPU). */
   setUnwrap(p: number): void {
     const v = Math.round(p * 1000) / 1000;
@@ -314,6 +424,7 @@ export class Can {
     });
     geos.forEach((g) => g.dispose());
     this.materials.forEach((m) => m.dispose());
+    this.plateTex.forEach((t) => t.dispose());
   }
 }
 

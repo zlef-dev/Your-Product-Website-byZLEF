@@ -47,6 +47,8 @@ export async function startStage(opts: {
     surfaces: stage.surfaces,
     setInk: (v) => stage.setInk(v),
     hold: (on) => stage.hold(on),
+    showPlates: (plates, w, h) => stage.showPlates(plates, w, h),
+    setPlateFrame: (f) => stage.setPlateFrame(f),
   });
 
   let printedName = '';

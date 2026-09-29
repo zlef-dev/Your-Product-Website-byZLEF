@@ -20,6 +20,8 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import type { Finish } from '../lib/brand';
 import { mixHex } from '../lib/contrast';
+import type { Plates } from '../label/cmyk';
+import type { PlateFrame } from '../label/print-run';
 import { LabelSurfaces, type SurfaceName } from '../label/surfaces';
 import { Can } from './can';
 import { CAN } from './dims';
@@ -270,6 +272,16 @@ export class Stage {
 
   setInk(v: number): void {
     this.can.setInk(v);
+    this.invalidate();
+  }
+
+  showPlates(plates: Plates | null, width: number, height: number): void {
+    this.can.setPlates(plates, width, height);
+    this.invalidate();
+  }
+
+  setPlateFrame(frame: PlateFrame): void {
+    this.can.setPlateFrame(frame);
     this.invalidate();
   }
 
