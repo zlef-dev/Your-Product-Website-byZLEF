@@ -69,3 +69,15 @@ One line of reasoning per judgement call. Newest at the bottom of each section.
 - **The scroll director and the stage boot in several small tasks** (pins, then the progress strip, then the heading reveals; environment, label, shaders), so no single task blocks input for long.
 - **Print-run plates are at most 1024 px wide on every tier.** They're on screen for about a second, in motion; a quarter of the pixels keeps separation and upload out of the frame budget, and the exact full-size artwork still swaps in at the end.
 - **Label surfaces redraw one per frame** after a print, instead of all four line-up labels in one frame.
+- **The page stylesheet is inlined into each HTML page at build time.** One render-blocking request fewer on slow mobile connections; the CSP already allows inline styles.
+
+## Testing and deploy
+
+- **`vite preview` serves the production headers**, generated with Cloudflare's `_headers` from one source (`build/headers.ts`), so every e2e test runs under the real Content-Security-Policy.
+- **The e2e console guard ignores exactly one message, and only in WebKit.** WebKit won't reuse a font preload that carries `crossorigin` (which Chromium and Firefox need), so it refetches Archivo and warns. The preload stays because the brief asks for it and it's correct for the other engines.
+- **Playwright includes Firefox only where it starts.** Its build fails to launch on this machine (a Windows side-by-side runtime error); the config checks once and says so rather than failing every Firefox test.
+- **Mocked Web3Forms failures return `success: false`, not an HTTP error.** A 500 makes the browser itself log "Failed to load resource"; the network-error path is covered by the `sendBrief` unit tests.
+- **Only the newest print announces "Printed: …".** Clicking a colour before the name commits starts a sample-named print; if that superseded print finished last it overwrote the status.
+- **Two e2e workers with generous timeouts.** WebKit renders WebGL in software here, and four parallel workers starved it into timeouts.
+- **Lighthouse runs in a Chromium launched by Playwright**, over the DevTools port; chrome-launcher can't spawn Chrome in some sandboxes.
+- **The favicon is a can silhouette with a label band** in process black on paper; the 180 px touch icon is rendered from it (`scripts/icons.mjs`).

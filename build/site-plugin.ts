@@ -5,6 +5,7 @@
  */
 import type { HtmlTagDescriptor, Plugin } from 'vite';
 import { contactEmail, site, siteUrl, socialLinks, studioName } from '../src/config.ts';
+import { cloudflareHeaders } from './headers.ts';
 import { meta, notFound, privacy } from '../src/content.ts';
 import { homeBody } from '../src/templates/home.ts';
 import { notFoundBody, privacyBody } from '../src/templates/pages.ts';
@@ -150,8 +151,40 @@ export function sitePlugin(): Plugin {
     generateBundle() {
       this.emitFile({ type: 'asset', fileName: 'manifest.webmanifest', source: manifest() });
       this.emitFile({ type: 'asset', fileName: 'robots.txt', source: robots() });
+      this.emitFile({ type: 'asset', fileName: '_headers', source: cloudflareHeaders() });
       const map = sitemap();
       if (map) this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: map });
+    },
+  };
+}
+
+/**
+ * Inlines the page stylesheet into the HTML: one render-blocking request fewer, which
+ * matters most on slow mobile connections. (CSP allows inline styles: style-src 'unsafe-inline'.)
+ */
+export function inlineCssPlugin(): Plugin {
+  return {
+    name: 'inline-css',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_opts, bundle) {
+      const inlined = new Set<string>();
+      for (const file of Object.values(bundle)) {
+        if (file.type !== 'asset' || !file.fileName.endsWith('.html')) continue;
+        let html = String(file.source);
+        html = html.replace(
+          /<link rel="stylesheet"(?: crossorigin)? href="\/(assets\/[^"]+\.css)">/g,
+          (tag, name: string) => {
+            const css = bundle[name];
+            if (!css || css.type !== 'asset') return tag;
+            inlined.add(name);
+            return `<style>${String(css.source)}</style>`;
+          },
+        );
+        file.source = html;
+      }
+      // Keep the CSS files too: lazy chunks may still reference them.
+      void inlined;
     },
   };
 }

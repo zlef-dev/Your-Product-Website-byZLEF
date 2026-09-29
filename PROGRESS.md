@@ -10,9 +10,11 @@ Live checklist. Each milestone is one git commit.
 - [x] M5 Form submission states, footer personalisation, 404 and privacy pages
 - [x] M6 Mobile compositions, reduced motion, no-WebGL fallback, quality tiers
 - [x] M7 Performance: bundle analysis, lazy loading, render on demand, compileAsync
-- [ ] M8 QA loop and fixes
-- [ ] M9 Docs and deploy config
+- [x] M8 QA: unit and e2e suites, two screenshot critique passes, Lighthouse, frame times, fixes
+- [x] M9 Docs and deploy config: README, DECISIONS, QA, `_headers`, favicon, touch icon, OG image
 
-## Next up
+## Open items
 
-M8: Playwright e2e suite (Chromium, Firefox, WebKit), screenshots and critique passes, final Lighthouse, QA.md.
+- Mobile Lighthouse performance is 65–69 (median), just under the 70 target; what was tried is in QA.md.
+- Firefox e2e wasn't run here (its Playwright build can't start on this machine).
+- The owner's fill-ins in `src/config.ts` (see README, "Before you launch").

@@ -22,36 +22,36 @@ One persistent WebGL canvas sits fixed behind the DOM. The DOM owns every word, 
 ## File tree
 
 ```
-index.html  404.html  privacy.html
-public/        favicon.svg, apple-touch-icon.png, manifest.webmanifest, _headers, og.png, robots.txt*
-scripts/       og.mjs, screenshots.mjs, perf.mjs, lighthouse.mjs, icons.mjs, serve-checks.mjs
+index.html  404.html  privacy.html        entry pages; bodies rendered from src/templates at build time
+build/          site-plugin.ts (pages, head tags, JSON-LD, robots, sitemap, manifest, _headers, font preload, CSS inlining), headers.ts (CSP)
+public/         favicon.svg, apple-touch-icon.png, og.png
+scripts/        screenshots.mjs, lighthouse.mjs, perf.mjs, og.mjs, icons.mjs, font-metrics.mjs, lib/ (preview server, Chromium flags)
 src/
-  config.ts  content.ts  env.d.ts
+  config.ts  content.ts  scenes.ts  env.d.ts
   main.ts  page-404.ts  page-privacy.ts
-  styles/      tokens.css fonts.css base.css layout.css scenes.css form.css pages.css
-  lib/         brand.ts contrast.ts sanitize.ts dom.ts motion.ts job.ts clock.ts tier.ts events.ts
-  label/       types.ts fit.ts barcode.ts cmyk.ts separate.ts separation.worker.ts fonts.ts draw.ts surface.ts print-run.ts logo.ts
-  stage/       index.ts state.ts renderer.ts set.ts can.ts materials.ts unwrap.ts lineup.ts fizz.ts frame.ts quality.ts crushed.ts capture.ts
-  scroll/      director.ts poses.ts progress.ts split.ts
-  ui/          chrome.ts tryit.ts takeover.ts footer.ts fallback-2d.ts download.ts share.ts
+  templates/   html.ts (escaping), partials.ts, home.ts, pages.ts
+  styles/      index.css tokens.css fonts.css base.css layout.css scenes.css form.css pages.css
+  lib/         brand.ts contrast.ts sanitize.ts dom.ts job.ts ease.ts clipboard.ts
+  label/       fit.ts barcode.ts cmyk.ts separate.ts separation.worker.ts fonts.ts draw.ts surfaces.ts print-run.ts logo.ts
+  stage/       index.ts stage.ts state.ts dims.ts set.ts can.ts clip.ts unwrap.ts quality.ts lineup.ts fizz.ts crushed.ts
+  scroll/      director.ts progress.ts split.ts
+  ui/          chrome.ts tryit.ts takeover.ts card.ts fallback-2d.ts
   form/        brief.ts validate.ts serialize.ts mailto.ts submit.ts
   debug/       debug.ts (lazy, ?debug only)
-tests/unit/    fit, contrast, cmyk, barcode, job, serialize, mailto, sanitize, validate, unwrap
-tests/e2e/     site.spec.ts form.spec.ts fallbacks.spec.ts pages.spec.ts
+tests/unit/    label, lib, form, print
+tests/e2e/     helpers, site, form, fallbacks, pages
 qa/            screenshots/, lighthouse-*.json, perf.json
 ```
 
-(*robots.txt and sitemap.xml are generated at build time from config so the canonical URL never ships as a placeholder.)
-
 ## Milestones
 
-- [ ] M0 Scaffold: Vite + TS strict, ESLint, Prettier, Vitest, Playwright, folders, config, content, tokens
-- [ ] M1 Static site: all scene DOM, copy, layout, working form (no motion, no 3D); screenshot + critique
-- [ ] M2 Stage: renderer, sweep, lights, can, label renderer (all modes/layouts), try-it live label, drag + keyboard rotation, PNG download
-- [ ] M3 Print run with worker separation
-- [ ] M4 Scroll director: Lenis + ScrollTrigger, Stage state, S1–S4, unwrap, line-up, launch, progress strip, scene index
-- [ ] M5 Form submission states, footer personalisation, 404 and privacy pages
-- [ ] M6 Mobile compositions, reduced motion, no-WebGL fallback, quality tiers
-- [ ] M7 Performance: bundle analysis, lazy loading, render on demand, compileAsync
-- [ ] M8 QA loop (§16) and fixes
-- [ ] M9 Docs and deploy config
+- [x] M0 Scaffold: Vite + TS strict, ESLint, Prettier, Vitest, Playwright, folders, config, content, tokens
+- [x] M1 Static site: all scene DOM, copy, layout, working form (no motion, no 3D); screenshot + critique
+- [x] M2 Stage: renderer, sweep, lights, can, label renderer (all modes/layouts), try-it live label, drag + keyboard rotation, PNG download
+- [x] M3 Print run with worker separation
+- [x] M4 Scroll director: Lenis + ScrollTrigger, Stage state, S1–S4, unwrap, line-up, launch, progress strip, scene index
+- [x] M5 Form submission states, footer personalisation, 404 and privacy pages
+- [x] M6 Mobile compositions, reduced motion, no-WebGL fallback, quality tiers
+- [x] M7 Performance: bundle analysis, lazy loading, render on demand, compileAsync
+- [x] M8 QA loop (§16) and fixes
+- [x] M9 Docs and deploy config

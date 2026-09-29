@@ -1,10 +1,11 @@
 import { resolve } from 'node:path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, type PluginOption } from 'vite';
-import { fontPreloadPlugin, sitePlugin } from './build/site-plugin.ts';
+import { SECURITY_HEADERS } from './build/headers.ts';
+import { fontPreloadPlugin, inlineCssPlugin, sitePlugin } from './build/site-plugin.ts';
 
 export default defineConfig(({ mode }) => {
-  const plugins: PluginOption[] = [sitePlugin(), fontPreloadPlugin()];
+  const plugins: PluginOption[] = [sitePlugin(), fontPreloadPlugin(), inlineCssPlugin()];
   if (mode === 'analyze') {
     plugins.push(
       visualizer({ filename: 'qa/bundle.html', gzipSize: true, template: 'treemap' }) as PluginOption,
@@ -26,7 +27,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     worker: { format: 'es' },
-    preview: { port: 4173, strictPort: true },
+    // Preview serves the production headers, so tests run under the real CSP.
+    preview: { port: 4173, strictPort: true, headers: SECURITY_HEADERS },
     server: { port: 5173 },
   };
 });
