@@ -96,8 +96,8 @@ function readPixelsAsync(gl: WebGL2RenderingContext, w: number, h: number): Prom
 }
 
 export class Stage {
-  /** What timelines write. */
-  readonly target: StageState = createState();
+  /** What timelines write (owned by the director, shared in). */
+  readonly target: StageState;
   /** What is rendered, damped toward target. */
   readonly current: StageState = createState();
 
@@ -139,7 +139,10 @@ export class Stage {
     gl: WebGL2RenderingContext,
     tier: Tier,
     private readonly reducedMotion: boolean,
+    target: StageState = createState(),
   ) {
+    this.target = target;
+    Object.assign(this.current, target);
     this.tier = tier;
     this.settings = { ...TIERS[tier] };
     this.renderer = new WebGLRenderer({
@@ -363,7 +366,7 @@ export class Stage {
       this.snap = false;
       moving = false;
     } else {
-      moving = damp(this.current, this.target, dt, 7);
+      moving = damp(this.current, this.target, dt, 10);
     }
     const ds = this.spinTarget - this.spin;
     if (Math.abs(ds) > 0.05) {

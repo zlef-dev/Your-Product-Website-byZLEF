@@ -9,6 +9,7 @@ import {
   CanvasTexture,
   Color,
   DirectionalLight,
+  DoubleSide,
   Group,
   HemisphereLight,
   Mesh,
@@ -34,7 +35,7 @@ function sweepProfile(): Array<[number, number, number]> {
   for (let i = 0; i <= floorSteps; i++) {
     const t = i / floorSteps;
     const z = FLOOR_FRONT + (CURVE_START - FLOOR_FRONT) * t;
-    pts.push([z, 0, 1 - 0.035 * t * t]);
+    pts.push([z, 0, 1 - 0.018 * t * t]);
   }
   const curveSteps = 18;
   for (let i = 1; i <= curveSteps; i++) {
@@ -48,7 +49,7 @@ function sweepProfile(): Array<[number, number, number]> {
   const wallSteps = 8;
   for (let i = 1; i <= wallSteps; i++) {
     const t = i / wallSteps;
-    pts.push([CURVE_START - RADIUS, RADIUS + (WALL_TOP - RADIUS) * t, 0.97 + 0.025 * t]);
+    pts.push([CURVE_START - RADIUS, RADIUS + (WALL_TOP - RADIUS) * t, 0.982 + 0.018 * t]);
   }
   return pts;
 }
@@ -65,7 +66,7 @@ export function createSweep(): Mesh<BufferGeometry, MeshBasicMaterial> {
       const u = c / cols;
       const x = -HALF_WIDTH + u * HALF_WIDTH * 2;
       // Light falls off gently toward the sides of the sweep.
-      const side = 1 - 0.05 * Math.min(1, (Math.abs(x) / 9) ** 2);
+      const side = 1 - 0.03 * Math.min(1, (Math.abs(x) / 9) ** 2);
       positions.set([x, y, z], p * 3);
       const v = shade * side;
       colors.set([v, v, v], p * 3);
@@ -85,7 +86,12 @@ export function createSweep(): Mesh<BufferGeometry, MeshBasicMaterial> {
   geo.setAttribute('color', new BufferAttribute(colors, 3));
   geo.setIndex(index);
   // Unlit and not tone mapped, so the sweep matches the CSS paper exactly.
-  const mat = new MeshBasicMaterial({ color: PAPER.clone(), vertexColors: true, toneMapped: false });
+  const mat = new MeshBasicMaterial({
+    color: PAPER.clone(),
+    vertexColors: true,
+    toneMapped: false,
+    side: DoubleSide,
+  });
   const mesh = new Mesh(geo, mat);
   mesh.name = 'sweep';
   mesh.renderOrder = -2;

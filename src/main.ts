@@ -1,9 +1,12 @@
 import './styles/index.css';
 import { initBriefForm } from './form/brief';
+import { brand } from './lib/brand';
 import { $, $$, prefersReducedMotion } from './lib/dom';
+import { initDirector } from './scroll/director';
+import { createState } from './stage/state';
 import { initChrome } from './ui/chrome';
 import { initTakeover } from './ui/takeover';
-import { initTryIt, setCanView } from './ui/tryit';
+import { initTryIt, samplePrintIfNeeded, setCanView } from './ui/tryit';
 
 const reducedMotion = prefersReducedMotion();
 document.documentElement.classList.toggle('is-reduced', reducedMotion);
@@ -12,6 +15,17 @@ initChrome();
 initTakeover();
 initTryIt({ reducedMotion });
 initBriefForm();
+
+// The Stage state: the only thing scroll timelines write. The 3D stage reads it.
+const target = createState();
+const director = initDirector({
+  target,
+  reducedMotion,
+  onSampleNeeded: (instant) => samplePrintIfNeeded(instant),
+});
+brand.subscribe((_s, meta) => {
+  if (meta.personalised) director.printed();
+});
 
 // ---------- S0 Press check: four ink levels tied to real readiness ----------
 
@@ -25,8 +39,7 @@ try {
 } catch {
   // Without storage the intro simply plays again.
 }
-const skipIntro = reducedMotion || seen;
-if (skipIntro) press?.classList.add('is-skipped');
+if (reducedMotion || seen) press?.classList.add('is-skipped');
 
 const ink = (i: number) => inks[i]?.classList.add('is-set');
 const finishIntro = () => press?.classList.add('is-done');
@@ -39,6 +52,7 @@ void document.fonts.ready.then(() => ink(0));
 void import('./stage/index')
   .then(({ startStage }) =>
     startStage({
+      target,
       reducedMotion,
       onReady: (step) => {
         if (step === 'renderer') ink(1);
@@ -51,7 +65,10 @@ void import('./stage/index')
     }),
   )
   .then((handle) => {
-    if (handle) setCanView(handle.view);
+    if (handle) {
+      setCanView(handle.view);
+      director.attach(handle.link);
+    }
     if (new URLSearchParams(location.search).has('debug')) {
       void import('./debug/debug').then((m) => m.startDebug(handle?.stage ?? null));
     }

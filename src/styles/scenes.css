@@ -161,7 +161,7 @@
 /* The drag surface covers the product; buttons sit under it. */
 .spin {
   position: absolute;
-  inset: 8% 12% 18%;
+  inset: 12% 22%;
   cursor: grab;
   touch-action: pan-y;
   border-radius: var(--radius);
@@ -174,7 +174,7 @@
 .spin__hint {
   position: absolute;
   left: 50%;
-  top: 6%;
+  top: calc(var(--header-h) + 0.5rem);
   translate: -50% 0;
   padding: 0.15rem 0.5rem;
   background: var(--paper);
@@ -191,16 +191,23 @@
 
 .spin__buttons {
   position: absolute;
-  left: 50%;
-  bottom: 3%;
-  translate: -50% 0;
+  inset: 50% 0 auto;
+  translate: 0 -50%;
   display: flex;
-  gap: 0.5rem;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.spin__buttons .button {
+  pointer-events: auto;
 }
 
 @media (min-width: 1024px) {
   .spin__buttons {
-    bottom: calc(var(--target) + var(--space-3));
+    inset: auto 0 calc(var(--target) + var(--space-3));
+    translate: none;
+    justify-content: center;
+    gap: 0.5rem;
   }
 }
 

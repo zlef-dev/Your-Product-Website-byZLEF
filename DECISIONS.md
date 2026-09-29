@@ -39,3 +39,12 @@ One line of reasoning per judgement call. Newest at the bottom of each section.
 - **The print run composites its plates in the label shader.** Four plate textures (uploaded one per frame, as each plate first appears) are multiplied over the bare stock colour with per-plate offsets and opacity as uniforms, so animating 1.1 s of plates costs no per-frame canvas work or texture uploads. The 2D fallback composites the same `printFrame()` timeline on a small canvas.
 - **Plates land 6–12 px out of register (at 2048 px, scaled for the low tier), feed in from the left, and snap together over the last 16% with the `press` ease.** The original artwork crossfades in over the last 10%, which is where "swap in the exact original" happens; the separation's multiply approximation is visibly darker until then, which reads as wet ink drying to its true colour.
 - **The separation worker keeps a copy of each job.** If the worker fails to load (CSP, old browser) or never answers within 4 s, the main thread finishes the job, so a print can't hang.
+
+## Scroll direction
+
+- **One master timeline in scene units (0–6), not one scrubbed timeline per scene.** Several scenes write the same Stage fields (camera target, frame); separate scrubbed timelines fight over them when scrolling back and forth. Scroll position maps piecewise onto timeline time through the live pin boundaries and is smoothed with a 1 s `quickTo` (the equivalent of `scrub: 1`), and the timeline is rebuilt on every ScrollTrigger refresh so slot measurements and pin lengths never go stale.
+- **`gsap.matchMedia` gets an always-true condition.** It only runs its callback while at least one condition matches; without it phones (neither wide nor reduced motion) got no pins at all.
+- **The sweep material is double-sided.** Its triangles wound away from the camera and were culled, so the launch wash never showed; the page's CSS paper had been standing in for it.
+- **Line-up captions show only while a product is centred.** During the overview no single product is the subject, so no caption is.
+- **The S4 title fades out as the sweep washes to the brand colour.** Process-black type on a dark label colour would fail contrast; the step card keeps its paper backing, so the launch copy stays readable.
+- **The wash goes to the colour printed on the can** (the sample's Cherry when the visitor hasn't set a brand), not `--brand`, which would be process black before personalisation and wash the screen black.

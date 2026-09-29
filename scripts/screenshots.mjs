@@ -35,7 +35,7 @@ const SHOTS = [
   ['s4-02-direction', 'process', 0.33],
   ['s4-03-design', 'process', 0.5],
   ['s4-04-build', 'process', 0.7],
-  ['s4-05-launch', 'process', 0.92],
+  ['s4-05-launch', 'process', 0.95],
   ['s5-build', 'build', 0],
   ['s7-brief', 'brief', 0],
   ['s8-footer', 'contact', 0],

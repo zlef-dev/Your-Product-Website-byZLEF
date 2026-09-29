@@ -3,23 +3,39 @@
  * WebGL2 isn't available; the caller then shows the 2D fallback.
  */
 import type { BrandState } from '../lib/brand';
+import { idle } from '../lib/dom';
 import { Printer } from '../label/print-run';
 import { toArt } from '../label/surfaces';
+import type { StageLink } from '../scroll/director';
 import type { CanView } from '../ui/tryit';
 import { composeCard, toPng, CARD } from '../ui/card';
 import { detectTier, isSoftwareRenderer } from './quality';
 import { probeWebGL, Stage } from './stage';
+import type { StageState } from './state';
 
 export type Readiness = 'renderer' | 'compiled' | 'frame';
 
 export interface StageHandle {
   stage: Stage;
   view: CanView;
+  link: StageLink;
 }
 
 let active: Stage | null = null;
 
+/** The line-up and the launch fizz arrive in their own chunk, before scene 3. */
+function loadExtras(stage: Stage): Promise<void> {
+  if (stage.hasLineup()) return Promise.resolve();
+  return Promise.all([import('./lineup'), import('./fizz')]).then(([{ Lineup }, { Fizz }]) => {
+    if (stage.hasLineup()) return;
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    stage.attachFizz(new Fizz(Math.min(stage.settings.particles, coarse ? 80 : 200)));
+    stage.attachLineup(new Lineup(stage.settings.latheSegments));
+  });
+}
+
 export async function startStage(opts: {
+  target: StageState;
   reducedMotion: boolean;
   onReady: (step: Readiness) => void;
 }): Promise<StageHandle | null> {
@@ -32,7 +48,7 @@ export async function startStage(opts: {
   if (isSoftwareRenderer(gl)) tier = 'low';
   document.body.prepend(canvas);
 
-  const stage = new Stage(canvas, gl, tier, opts.reducedMotion);
+  const stage = new Stage(canvas, gl, tier, opts.reducedMotion, opts.target);
   active = stage;
   opts.onReady('renderer');
   await stage.warm();
@@ -41,6 +57,7 @@ export async function startStage(opts: {
     canvas.classList.add('is-ready');
     opts.onReady('frame');
   });
+  stage.snapNext();
   stage.invalidate();
 
   const printer = new Printer({
@@ -67,8 +84,20 @@ export async function startStage(opts: {
     },
   };
 
+  const link: StageLink = {
+    setVisible: (v) => stage.setVisible(v),
+    setAnchor: (el, fill) => stage.setAnchor(el, fill),
+    snapNext: () => stage.snapNext(),
+    resetSpin: () => stage.resetSpin(),
+    ensureLineup: () => void loadExtras(stage),
+    setPointer: (x, y) => stage.setPointer(x, y),
+  };
+
+  // Have the line-up ready well before scene 3 so its first reveal doesn't hitch.
+  void idle(4000).then(() => loadExtras(stage));
+
   addEventListener('pagehide', () => stage.dispose(), { once: true });
-  return { stage, view };
+  return { stage, view, link };
 }
 
 if (import.meta.hot) {
