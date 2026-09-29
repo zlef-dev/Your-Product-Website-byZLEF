@@ -196,8 +196,7 @@
 
 .spin__buttons {
   position: absolute;
-  inset: 50% 0 auto;
-  translate: 0 -50%;
+  inset: auto 0 2%;
   display: flex;
   justify-content: space-between;
   pointer-events: none;

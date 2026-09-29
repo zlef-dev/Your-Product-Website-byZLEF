@@ -52,14 +52,18 @@ export function displayState(s: Readonly<BrandState>): BrandState {
   return { ...s, name: s.name || tryIt.sampleName };
 }
 
+let latest = 0;
+
 function requestPrint(state: BrandState, opts: PrintOptions = {}, announce = true): void {
   printedOnce = true;
   if (!view) {
     pending = { state, opts };
     return;
   }
+  const id = ++latest;
   void view.print(state, opts).then(() => {
-    if (announce && statusEl) statusEl.textContent = tryIt.printed(state.name);
+    // A newer print supersedes this one: only the can's final state is announced.
+    if (id === latest && announce && statusEl) statusEl.textContent = tryIt.printed(state.name);
   });
 }
 

@@ -62,6 +62,8 @@ main,
 }
 
 .site-header__cta {
+  /* A paper edge keeps the button distinct when the sweep washes to the brand colour. */
+  box-shadow: 0 0 0 2px var(--paper);
   min-height: var(--target);
   font-size: var(--step--1);
   padding-inline: 1rem;
