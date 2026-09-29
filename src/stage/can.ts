@@ -154,12 +154,19 @@ export class Can {
   private ink = 0;
   private materials: Array<MeshPhysicalMaterial | MeshBasicMaterial | LineBasicMaterial> = [];
 
-  constructor(opts: { latheSegments: number; radialSegments: number; anisotropy: boolean }) {
+  constructor(opts: {
+    latheSegments: number;
+    radialSegments: number;
+    anisotropy: boolean;
+    /** Extra rows along the wall and label, for deforming (the 404 crush). */
+    rows?: number;
+  }) {
     this.group.name = 'can';
     this.group.add(this.spinner);
 
     // Body.
-    const profile = CAN_PROFILE.map(([r, y]) => new Vector2(r, y));
+    const rows = opts.rows ?? 1;
+    const profile = withWallRows(CAN_PROFILE, rows).map(([r, y]) => new Vector2(r, y));
     const bodyMat = new MeshPhysicalMaterial({
       color: new Color('#D7DADD'),
       metalness: 1,
@@ -222,7 +229,7 @@ export class Can {
       SLEEVE_RADIUS,
       SLEEVE_HEIGHT,
       opts.radialSegments,
-      1,
+      rows,
       true,
       -Math.PI,
       Math.PI * 2,
@@ -398,6 +405,30 @@ export class Can {
     geo.computeBoundingSphere();
   }
 
+  /**
+   * Crushes the can (404 page): displaces the body and label vertices with `fn` (can-local
+   * coordinates) and drops the lid to follow. The label is fixed wrapped from then on.
+   */
+  crush(fn: (x: number, y: number, z: number, outer: number) => [number, number, number]): void {
+    this.setUnwrap(0);
+    for (const mesh of [this.body, this.sleeve] as Mesh[]) {
+      const geo = mesh.geometry;
+      const pos = geo.getAttribute('position') as BufferAttribute;
+      // The label rides a little further out so the body can't poke through its folds.
+      const outer = mesh === this.sleeve ? 1.012 : 1;
+      for (let i = 0; i < pos.count; i++) {
+        const [x, y, z] = fn(pos.getX(i), pos.getY(i), pos.getZ(i), outer);
+        pos.setXYZ(i, x, y, z);
+      }
+      pos.needsUpdate = true;
+      geo.computeVertexNormals();
+      if (geo.getAttribute('tangent')) geo.computeTangents();
+      geo.computeBoundingSphere();
+    }
+    const [lx, ly, lz] = fn(0, CAN.height, 0, 1);
+    this.lidGroup.position.set(lx, ly - CAN.height, lz);
+  }
+
   /** World-space clip heights for the build and label reveals. */
   setReveal(solid: number, wire: number, label: number): void {
     const base = this.group.position.y;
@@ -426,6 +457,21 @@ export class Can {
     this.materials.forEach((m) => m.dispose());
     this.plateTex.forEach((t) => t.dispose());
   }
+}
+
+/** Replaces the straight wall's points with `rows` evenly spaced ones. */
+function withWallRows(profile: Array<[number, number]>, rows: number): Array<[number, number]> {
+  if (rows <= 1) return profile;
+  const out: Array<[number, number]> = [];
+  for (const p of profile) {
+    const onWall = p[0] === CAN.radius && p[1] > CAN.wallBottom && p[1] < CAN.wallTop;
+    if (onWall) continue;
+    out.push(p);
+    if (p[0] === CAN.radius && p[1] === CAN.wallBottom) {
+      for (let i = 1; i < rows; i++) out.push([CAN.radius, CAN.wallBottom + (SLEEVE_HEIGHT * i) / rows]);
+    }
+  }
+  return out;
 }
 
 /** Label textures are uploaded without flipY, so canvas row 0 must map to the top edge. */

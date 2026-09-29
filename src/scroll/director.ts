@@ -18,6 +18,7 @@ import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import { BRIEF_SENT } from '../form/brief';
 import { $, $$, finePointer, reducedMotionQuery, setScrollImpl, wideQuery } from '../lib/dom';
 import { CAN } from '../stage/dims';
 import { DEFAULT_STATE, type StageState } from '../stage/state';
@@ -36,6 +37,8 @@ export interface StageLink {
   resetSpin(): void;
   ensureLineup(): void;
   setPointer(x: number, y: number): void;
+  /** Prints the shipping sticker onto the label. */
+  sticker(job: string): void;
 }
 
 /** Line-up positions and framing heights (mirrors stage/lineup.ts without importing three). */
@@ -125,8 +128,10 @@ export function initDirector(opts: {
     tint: T.tint,
   });
 
+  let shipped = false;
   const briefPose = (): Partial<StageState> => ({
     ...RESET,
+    ship: shipped ? 1 : 0,
     tx: 0,
     ty: 0.61,
     tz: 0,
@@ -492,6 +497,15 @@ export function initDirector(opts: {
       progress();
     };
   }
+
+  // Brief sent: a shipping sticker prints onto the label, then the can slides off the sweep.
+  addEventListener(BRIEF_SENT, (e) => {
+    const job = (e as CustomEvent<{ job: string }>).detail.job;
+    shipped = true;
+    call((l) => l.sticker(job));
+    if (opts.reducedMotion) return;
+    gsap.to(T, { ship: 1, duration: 1.3, delay: 0.7, ease: 'power2.in' });
+  });
 
   return {
     attach(l: StageLink) {

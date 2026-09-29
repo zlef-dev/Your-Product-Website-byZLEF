@@ -91,6 +91,10 @@ export async function startStage(opts: {
     resetSpin: () => stage.resetSpin(),
     ensureLineup: () => void loadExtras(stage),
     setPointer: (x, y) => stage.setPointer(x, y),
+    sticker: (job) => {
+      stage.surfaces.stickSticker(job);
+      stage.invalidate();
+    },
   };
 
   // Have the line-up ready well before scene 3 so its first reveal doesn't hitch.

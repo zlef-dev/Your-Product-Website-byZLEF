@@ -48,3 +48,10 @@ One line of reasoning per judgement call. Newest at the bottom of each section.
 - **Line-up captions show only while a product is centred.** During the overview no single product is the subject, so no caption is.
 - **The S4 title fades out as the sweep washes to the brand colour.** Process-black type on a dark label colour would fail contrast; the step card keeps its paper backing, so the launch copy stays readable.
 - **The wash goes to the colour printed on the can** (the sample's Cherry when the visitor hasn't set a brand), not `--brand`, which would be process black before personalisation and wash the screen black.
+- **After a brief is sent the can stays shipped for the session.** Scrolling back to the brief shows the empty sweep rather than the can reappearing as if nothing happened.
+
+## Pages
+
+- **The 404 can wears the visitor's brand when they set one this session**, otherwise the blank white label: their own product "out of stock" lands the joke harder.
+- **The crushed can gets dense wall and label rows (32) on the 404 page only.** The main can keeps a single-row sleeve (a few hundred vertices, cheap to unwrap every frame); a crush needs rows to bend, and different row counts let the body poke through the label's folds.
+- **Without WebGL the 404 page shows the headline and button alone.** The page's job is to get people back to the shelf, and the squeezed headline carries the joke.

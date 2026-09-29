@@ -6,7 +6,7 @@
 import { labelCopy } from '../content';
 import type { BrandState } from '../lib/brand';
 import { BOTTLE_BAND_ASPECT, JAR_BAND_ASPECT, SLEEVE_ASPECT } from '../stage/dims';
-import { drawAnnotations, drawLabel, type LabelArt, type LabelMode } from './draw';
+import { drawAnnotations, drawLabel, drawSticker, type LabelArt, type LabelMode } from './draw';
 import { ensureLabelFonts } from './fonts';
 
 export type SurfaceName = 'sleeve' | 'proof' | 'annotations' | 'bottle' | 'jar' | 'box';
@@ -102,6 +102,12 @@ export class LabelSurfaces {
       mode: this.art ? mode : 'blank',
       art,
     });
+    this.touch('sleeve');
+  }
+
+  /** Prints a shipping sticker over the current sleeve artwork. */
+  stickSticker(job: string): void {
+    drawSticker(this.sleeve.ctx, this.sleeve.width, this.sleeve.height, job);
     this.touch('sleeve');
   }
 

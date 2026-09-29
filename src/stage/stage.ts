@@ -130,6 +130,7 @@ export class Stage {
   private lineup: LineupLike | null = null;
   private fizz: FizzLike | null = null;
   private firstFrame: (() => void) | null = null;
+  private shadowOffset = 0;
   private disposed = false;
   private snap = false;
   tier: Tier;
@@ -140,6 +141,7 @@ export class Stage {
     tier: Tier,
     private readonly reducedMotion: boolean,
     target: StageState = createState(),
+    canRows = 1,
   ) {
     this.target = target;
     Object.assign(this.current, target);
@@ -180,6 +182,7 @@ export class Stage {
       latheSegments: this.settings.latheSegments,
       radialSegments: this.settings.radialSegments,
       anisotropy: tier !== 'low',
+      rows: canRows,
     });
     this.scene.add(this.can.group);
     this.shadow = createContactShadow(1.15, 1.15, 0.8);
@@ -285,6 +288,14 @@ export class Stage {
 
   setPlateFrame(frame: PlateFrame): void {
     this.can.setPlateFrame(frame);
+    this.invalidate();
+  }
+
+  /** Moves and stretches the contact shadow (a can lying on its side). */
+  setShadow(offsetX: number, scaleX: number): void {
+    this.shadowOffset = offsetX;
+    this.shadow.scale.x = scaleX;
+    this.shadowCore.scale.x = scaleX;
     this.invalidate();
   }
 
@@ -496,7 +507,7 @@ export class Stage {
     // Shadows follow the can and fade as it lifts off.
     const lift = Math.max(0, 1 - rise * 1.6) * (1 - s.ship);
     for (const m of [this.shadow, this.shadowCore]) {
-      m.position.x = g.position.x;
+      m.position.x = g.position.x + this.shadowOffset;
       (m.material as { opacity: number }).opacity = 0.9 * lift * (0.35 + 0.65 * s.solid);
     }
 

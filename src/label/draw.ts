@@ -457,6 +457,39 @@ export function drawLabel(ctx: Ctx, w: number, h: number, p: DrawParams): void {
   ctx.restore();
 }
 
+/** A shipping sticker printed onto the front of the sleeve when a brief is sent. */
+export function drawSticker(ctx: Ctx, w: number, h: number, job: string): void {
+  const sw = w * 0.2;
+  const sh = h * 0.34;
+  ctx.save();
+  ctx.translate(w * 0.5, h * 0.62);
+  ctx.rotate(-0.07);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
+  ctx.strokeStyle = K;
+  ctx.lineWidth = Math.max(1, h * 0.004);
+  ctx.strokeRect(-sw / 2 + h * 0.012, -sh / 2 + h * 0.012, sw - h * 0.024, sh - h * 0.024);
+  ctx.fillStyle = K;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  setFont(ctx, FONTS.wide, h * 0.075);
+  ctx.fillText(labelCopy.shipped, 0, -sh * 0.18);
+  setFont(ctx, FONTS.smallBold, h * 0.045);
+  ctx.fillText(job, 0, sh * 0.04);
+  // Decorative postal bars.
+  const bars = barcodeFor(job).modules;
+  const total = bars.reduce((a, b) => a + b, 0);
+  const bw = (sw * 0.7) / total;
+  let x = -sw * 0.35;
+  bars.forEach((m, i) => {
+    if (i % 2 === 0) ctx.fillRect(x, sh * 0.1, m * bw, sh * 0.16);
+    x += m * bw;
+  });
+  setFont(ctx, FONTS.small, h * 0.03);
+  ctx.fillText(labelCopy.stickerNote, 0, sh * 0.39);
+  ctx.restore();
+}
+
 /** The unprinted aluminium the print run lays its plates over. */
 export function drawBase(ctx: Ctx, w: number, h: number): void {
   ctx.save();

@@ -257,6 +257,8 @@ export const labelCopy = {
   bestBefore: 'Best before: launch day.',
   serving: 'Serving suggestion: share it.',
   boxNote: 'Contents: one website, ready to launch.',
+  shipped: 'SHIPPED',
+  stickerNote: 'Handle with care: contains one website.',
   printedIn: `Printed in Manila by ${wordmark}`,
   proofTitle: 'Proof',
   trim: 'Trim',
