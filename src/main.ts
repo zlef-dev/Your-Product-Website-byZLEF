@@ -1,9 +1,9 @@
 import './styles/index.css';
 import { initBriefForm } from './form/brief';
-import { prefersReducedMotion } from './lib/dom';
+import { $, $$, prefersReducedMotion } from './lib/dom';
 import { initChrome } from './ui/chrome';
 import { initTakeover } from './ui/takeover';
-import { initTryIt } from './ui/tryit';
+import { initTryIt, setCanView } from './ui/tryit';
 
 const reducedMotion = prefersReducedMotion();
 document.documentElement.classList.toggle('is-reduced', reducedMotion);
@@ -12,3 +12,47 @@ initChrome();
 initTakeover();
 initTryIt({ reducedMotion });
 initBriefForm();
+
+// ---------- S0 Press check: four ink levels tied to real readiness ----------
+
+const SEEN = 'iybh:seen';
+const press = $('[data-press-check]');
+const inks = press ? $$('span', press) : [];
+let seen = false;
+try {
+  seen = sessionStorage.getItem(SEEN) === '1';
+  sessionStorage.setItem(SEEN, '1');
+} catch {
+  // Without storage the intro simply plays again.
+}
+const skipIntro = reducedMotion || seen;
+if (skipIntro) press?.classList.add('is-skipped');
+
+const ink = (i: number) => inks[i]?.classList.add('is-set');
+const finishIntro = () => press?.classList.add('is-done');
+// The intro never holds anything back and is over within 1.6 s.
+window.setTimeout(finishIntro, 1600);
+void document.fonts.ready.then(() => ink(0));
+
+// ---------- The stage (lazy: the H1 and copy never wait for it) ----------
+
+void import('./stage/index')
+  .then(({ startStage }) =>
+    startStage({
+      reducedMotion,
+      onReady: (step) => {
+        if (step === 'renderer') ink(1);
+        if (step === 'compiled') ink(2);
+        if (step === 'frame') {
+          ink(3);
+          window.setTimeout(finishIntro, 300);
+        }
+      },
+    }),
+  )
+  .then((handle) => {
+    if (handle) setCanView(handle.view);
+    if (new URLSearchParams(location.search).has('debug')) {
+      void import('./debug/debug').then((m) => m.startDebug(handle?.stage ?? null));
+    }
+  });

@@ -256,6 +256,7 @@ export const labelCopy = {
   ingredients: 'Ingredients: one good idea, a deadline, taste.',
   bestBefore: 'Best before: launch day.',
   serving: 'Serving suggestion: share it.',
+  boxNote: 'Contents: one website, ready to launch.',
   printedIn: `Printed in Manila by ${wordmark}`,
   proofTitle: 'Proof',
   trim: 'Trim',

@@ -8,6 +8,7 @@
  */
 import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
+import { launchOptions } from './lib/browser.mjs';
 import { startPreview } from './lib/server.mjs';
 
 const args = new Map(
@@ -45,7 +46,7 @@ const filter = args.get('filter');
 const outDir = `qa/screenshots${reduced ? '/reduced' : ''}`;
 
 const { url, close } = await startPreview();
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined });
+const browser = await chromium.launch(launchOptions());
 
 async function settle(page, ms = 1400) {
   await page.waitForTimeout(ms);
