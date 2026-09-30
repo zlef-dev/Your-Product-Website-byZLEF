@@ -8,6 +8,7 @@ export default tseslint.config(
       'dist',
       'dist-e2e',
       'dist-e2e-nokey',
+      'dist-e2e-configured',
       'node_modules',
       'qa',
       'test-results',

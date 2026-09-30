@@ -46,6 +46,7 @@ export class LabelSurfaces {
   private listeners = new Set<Listener>();
   private art: LabelArt | null = null;
   private annotateT = 0;
+  private artRequest = 0;
   private dirty = new Set<SurfaceName>();
   private raf = 0;
 
@@ -113,15 +114,18 @@ export class LabelSurfaces {
 
   /** Sets the printed artwork and redraws the secondary surfaces on the next frame. */
   async setArt(art: LabelArt | null): Promise<void> {
-    if (art) await ensureLabelFonts(art.style);
-    else await ensureLabelFonts('wide');
+    // Font loads finish in any order (Classic imports Fraunces on demand), so only the most
+    // recent request may apply: an older one resolving late must not overwrite newer artwork.
+    const request = ++this.artRequest;
+    await ensureLabelFonts(art ? art.style : 'wide');
+    if (request !== this.artRequest) return;
     this.art = art;
     this.extra.forEach((_s, name) => this.dirty.add(name));
     this.schedule();
   }
 
   setAnnotation(t: number): void {
-    const v = Math.round(t * 60) / 60;
+    const v = Math.round(t * 30) / 30;
     if (v === this.annotateT) return;
     this.annotateT = v;
     if (this.extra.has('annotations')) {

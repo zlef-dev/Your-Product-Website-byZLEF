@@ -43,7 +43,7 @@ const COMMIT_DELAY = 600;
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 
 let view: CanView | null = null;
-let pending: { state: BrandState; opts: PrintOptions } | null = null;
+let pending: { state: BrandState; opts: PrintOptions; announce: boolean } | null = null;
 let printedOnce = false;
 let statusEl: HTMLElement | null = null;
 
@@ -57,7 +57,9 @@ let latest = 0;
 function requestPrint(state: BrandState, opts: PrintOptions = {}, announce = true): void {
   printedOnce = true;
   if (!view) {
-    pending = { state, opts };
+    // Queued until the stage (or the 2D fallback) is ready; the newest request wins, and it
+    // keeps its own announcement: a visitor who typed before the can appeared still hears it.
+    pending = { state, opts, announce };
     return;
   }
   const id = ++latest;
@@ -72,9 +74,9 @@ export function setCanView(v: CanView): void {
   view = v;
   view.setFinish(brand.get().finish);
   if (pending) {
-    const { state, opts } = pending;
+    const { state, opts, announce } = pending;
     pending = null;
-    requestPrint(state, opts, false);
+    requestPrint(state, opts, announce);
   }
 }
 

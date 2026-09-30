@@ -133,6 +133,26 @@ test.describe('the brief form', () => {
     await expect(page.locator('[data-result]')).toBeHidden();
   });
 
+  test('a dropped connection keeps everything typed and shows the error', async ({
+    page,
+    consoleProblems,
+  }) => {
+    await page.route(ENDPOINT, (route) => route.abort('failed'));
+    await openBrief(page);
+    await fillAllSteps(page);
+    await page.locator('#brief-form').getByRole('button', { name: 'Send brief' }).click();
+    const error = page.locator('[data-send-error]');
+    await expect(error).toBeVisible();
+    await expect(error).toHaveText(/The brief didn’t send\. Check your connection and try again/);
+    await expect(page.locator('#f-email')).toHaveValue('ana@kopikalye.ph');
+    await expect(page.locator('#f-goal')).toHaveValue('Sell cold brew subscriptions online.');
+    await expect(page.getByRole('button', { name: 'Send brief' })).toBeEnabled();
+    // The browser itself logs the aborted request; that one message is the expected result here.
+    const expected =
+      /failed to load resource|net::err|networkerror|load failed|fetch api cannot load|access control/i;
+    consoleProblems.splice(0, consoleProblems.length, ...consoleProblems.filter((m) => !expected.test(m)));
+  });
+
   test('without a key, "Send brief" opens a pre-filled email draft', async ({ page }) => {
     await page.addInitScript(() => {
       // Record the mailto: link instead of launching an email app.

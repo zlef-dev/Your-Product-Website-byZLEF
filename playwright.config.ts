@@ -2,9 +2,10 @@ import { spawnSync } from 'node:child_process';
 import { defineConfig, devices, firefox } from '@playwright/test';
 
 /**
- * Two production builds are served:
+ * Three production builds are served:
  *   :4174  built with a test Web3Forms key (the API itself is always mocked)
  *   :4175  built without a key, for the mailto fallback
+ *   :4176  built with every config value set (VITE_* overrides) and no key
  */
 /** Chromium renders WebGL on the GPU (ANGLE) unless SOFTWARE_GL=1; see scripts/lib/browser.mjs. */
 const angle = process.platform === 'win32' ? 'd3d11' : process.platform === 'darwin' ? 'metal' : 'gl';
@@ -34,6 +35,8 @@ const withFirefox = process.env.PW_FIREFOX_OK === '1';
 
 export const KEY_URL = 'http://localhost:4174';
 export const NOKEY_URL = 'http://localhost:4175';
+/** A build with every config value set (studio name, email, site URL, social links) and no key. */
+export const CONFIGURED_URL = 'http://localhost:4176';
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -67,6 +70,22 @@ export default defineConfig({
         'npx vite build --outDir dist-e2e-nokey && npx vite preview --outDir dist-e2e-nokey --port 4175 --strictPort',
       url: NOKEY_URL,
       env: { VITE_WEB3FORMS_KEY: '' },
+      reuseExistingServer: false,
+      timeout: 180_000,
+    },
+    {
+      command:
+        'npx vite build --outDir dist-e2e-configured && npx vite preview --outDir dist-e2e-configured --port 4176 --strictPort',
+      url: CONFIGURED_URL,
+      env: {
+        VITE_WEB3FORMS_KEY: '',
+        VITE_STUDIO_NAME: 'Test Studio',
+        VITE_CONTACT_EMAIL: 'hello@studio.test',
+        VITE_SITE_URL: 'https://studio.test',
+        VITE_INSTAGRAM_URL: 'https://instagram.com/teststudio',
+        VITE_LINKEDIN_URL: 'https://linkedin.com/company/teststudio',
+        VITE_GITHUB_URL: 'https://github.com/teststudio',
+      },
       reuseExistingServer: false,
       timeout: 180_000,
     },

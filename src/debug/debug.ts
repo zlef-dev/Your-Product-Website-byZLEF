@@ -38,5 +38,13 @@ export function startDebug(stage: Stage | null): void {
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
-  (window as unknown as { __stage?: Stage | null }).__stage = stage;
+  const w = window as unknown as {
+    __stage?: Stage | null;
+    __stageFrames?: () => number;
+    __stageEnvironment?: () => boolean;
+  };
+  w.__stage = stage;
+  // Read-only probes the end-to-end tests use to check the stage is still rendering.
+  w.__stageFrames = () => stage?.renderer.info.render.frame ?? -1;
+  w.__stageEnvironment = () => !!stage?.scene.environment;
 }

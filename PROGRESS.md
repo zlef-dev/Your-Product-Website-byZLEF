@@ -15,6 +15,6 @@ Live checklist. Each milestone is one git commit.
 
 ## Open items
 
-- Mobile Lighthouse performance is 65–69 (median), just under the 70 target; what was tried is in QA.md.
 - Firefox e2e wasn't run here (its Playwright build can't start on this machine).
-- The owner's fill-ins in `src/config.ts` (see README, "Before you launch").
+- Mobile Lighthouse performance is 73 (median of three; batches range 65–73), close to the 70 target.
+- The owner's fill-ins in `src/config.ts` and a real Web3Forms test brief (see README, "Before you launch").

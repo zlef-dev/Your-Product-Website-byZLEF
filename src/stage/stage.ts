@@ -496,9 +496,9 @@ export class Stage {
   };
 
   /**
-   * Uploads changed label surfaces as ImageData from their CPU-backed canvases: handing
-   * WebGL the canvas element itself makes Chrome read pixels back from the GPU and log
-   * a stall warning on every re-upload.
+   * Uploads changed label surfaces straight from their canvases. They are CPU-backed
+   * (`willReadFrequently`), so this is a plain memory copy: no GPU readback, and no extra
+   * 8 MB ImageData allocation and copy per update (which cost frames on slower CPUs).
    */
   private uploadTextures(): void {
     if (!this.dirtyTextures.size) return;
@@ -512,9 +512,9 @@ export class Stage {
     this.dirtyTextures.clear();
   }
 
-  private surfaceImage(name: SurfaceName): ImageData {
+  private surfaceImage(name: SurfaceName): HTMLCanvasElement {
     const s = name === 'sleeve' ? this.surfaces.sleeve : this.surfaces.get(name);
-    return s.ctx.getImageData(0, 0, s.width, s.height);
+    return s.canvas;
   }
 
   private stepDown(): void {

@@ -56,6 +56,8 @@ Anything in `config.ts` still wrapped in `[square brackets]` counts as unset and
 - no social links: they're hidden;
 - no site URL: the canonical link, `og:url` and sitemap are left out.
 
+For CI or previews you can also set these as build-time environment variables instead of editing the file: `VITE_STUDIO_NAME`, `VITE_CONTACT_EMAIL`, `VITE_SITE_URL`, `VITE_INSTAGRAM_URL`, `VITE_LINKEDIN_URL` and `VITE_GITHUB_URL` (the end-to-end tests use them to build a fully configured site).
+
 To show selected work, add entries to `site.work` (title, year, role, one-line outcome, link, optional image in `public/`). The section and its scene-index entry appear automatically.
 
 ## Briefs by email: Web3Forms
