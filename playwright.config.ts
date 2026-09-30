@@ -8,7 +8,8 @@ import { defineConfig, devices, firefox } from '@playwright/test';
  */
 /** Chromium renders WebGL on the GPU (ANGLE) unless SOFTWARE_GL=1; see scripts/lib/browser.mjs. */
 const angle = process.platform === 'win32' ? 'd3d11' : process.platform === 'darwin' ? 'metal' : 'gl';
-const gpuArgs = process.env.SOFTWARE_GL === '1' ? [] : ['--enable-gpu', '--ignore-gpu-blocklist', `--use-angle=${angle}`];
+const gpuArgs =
+  process.env.SOFTWARE_GL === '1' ? [] : ['--enable-gpu', '--ignore-gpu-blocklist', `--use-angle=${angle}`];
 
 /**
  * Some Windows machines can't start Playwright's Firefox build ("side-by-side configuration

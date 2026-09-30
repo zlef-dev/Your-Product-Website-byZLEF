@@ -329,7 +329,8 @@ export function initTryIt(opts: { reducedMotion: boolean }): void {
     if (spin.hasPointerCapture(e.pointerId)) spin.releasePointerCapture(e.pointerId);
     if (opts.reducedMotion) return;
     // A short, damped coast after release.
-    let v = velocity * 16;
+    // Capped so a fast flick coasts a little, never a full spin.
+    let v = Math.max(-10, Math.min(10, velocity * 16));
     const coast = () => {
       if (Math.abs(v) < 0.05) return;
       turn(v, true);

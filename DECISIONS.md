@@ -81,3 +81,13 @@ One line of reasoning per judgement call. Newest at the bottom of each section.
 - **Two e2e workers with generous timeouts.** WebKit renders WebGL in software here, and four parallel workers starved it into timeouts.
 - **Lighthouse runs in a Chromium launched by Playwright**, over the DevTools port; chrome-launcher can't spawn Chrome in some sandboxes.
 - **The favicon is a can silhouette with a label band** in process black on paper; the 180 px touch icon is rendered from it (`scripts/icons.mjs`).
+
+## Audit pass (fixes)
+
+- **Deep links land on their scene.** `/#brief` used to land in S3: the browser jumps to the anchor before the pins add scroll space, and Lenis clamped to a stale limit. The director now re-measures Lenis and jumps once layout is final, only during load and never after the visitor scrolls.
+- **The progress label follows a reload or deep link** (it read "Scene 1 of 7" while at the brief).
+- **The scene-3 hitch was shader compiles.** With glass transmission on, three renders opaque objects into a linear buffer first, a second program variant per material, compiled synchronously when the bottle came into view (10 shaders, ~0.5 s). They are now precompiled with a dummy linear target bound only around the synchronous compile calls. The transmission buffer runs at half resolution.
+- **A quality step-down no longer compiles anything.** The bottle has two prebuilt glass materials, the unused one kept compiled on an invisible probe mesh. The frame monitor uses the median over its window, so a single stall never downgrades quality while sustained slowness always does (unit-tested).
+- **Sticker text is fitted to the sticker**; the stage is bfcache-safe (no dispose on `pagehide` when persisted) and rebuilds its reflections after a WebGL context loss; `?debug` draws ScrollTrigger markers.
+- **Accessibility:** scroll padding keeps focus clear of the fixed header and progress strip (the strip was covering the first chips of the form), reduced-motion CSS disables transitions, form-summary links are 44 px, sub-pages skip to the content instead of a brief they don't have.
+- **The job ticket uses a container query** to set short fields two to a row when the ticket itself is wide.

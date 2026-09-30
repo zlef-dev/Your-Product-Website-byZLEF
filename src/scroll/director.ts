@@ -155,6 +155,9 @@ export function initDirector(opts: {
   }
 
   ScrollTrigger.config({ ignoreMobileResize: true });
+  // ?debug draws ScrollTrigger's start/end markers (the frame-time readout is lazy-loaded
+  // separately by main.ts; markers are part of ScrollTrigger itself, so this is one flag).
+  if (new URLSearchParams(location.search).has('debug')) ScrollTrigger.defaults({ markers: true });
   const mm = gsap.matchMedia();
 
   // After first paint, in its own task: pins and timelines aren't needed to read the hero.
@@ -366,6 +369,9 @@ export function initDirector(opts: {
         call((l) => l.setVisible(false));
         return;
       }
+      // Arriving here without passing S2 (a deep link, "Start a brief"): the can beside the
+      // ticket wears the sample print instead of the blank label.
+      opts.onSampleNeeded(true);
       Object.assign(T, briefPose());
       call((l) => {
         l.setAnchor(slots.brief, 0.78);
@@ -405,6 +411,29 @@ export function initDirector(opts: {
     // A reload mid-page starts at the right moment instead of replaying from the top.
     proxy.time = timeFor(scrollY);
     tl.time(Math.min(proxy.time, tl.duration()));
+    // A link straight to a scene (/#brief): the browser scrolls to the anchor before the pins
+    // add their scroll space, so land on the scene once the layout is final. Only during
+    // load: it stops as soon as the visitor scrolls, and never re-runs on a later resize.
+    const hashId = decodeURIComponent(location.hash.slice(1));
+    let interacted = false;
+    for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const) {
+      addEventListener(type, () => (interacted = true), { once: true, passive: true });
+    }
+    const jumpToHash = () => {
+      const el = hashId && !interacted ? document.getElementById(hashId) : null;
+      if (!el) return;
+      const st = ScrollTrigger.getAll().find((t) => t.trigger === el && t.pin);
+      const y = st ? st.start : el.getBoundingClientRect().top + scrollY;
+      // Lenis clamps to the scroll limit it measured before the pins added their height.
+      lenis.resize();
+      lenis.scrollTo(y, { immediate: true, force: true });
+      if (Math.abs(scrollY - y) > 2) window.scrollTo(0, y);
+      gsap.killTweensOf(proxy);
+      proxy.time = timeFor(y);
+      tl.time(Math.min(proxy.time, tl.duration()));
+    };
+    jumpToHash();
+
     // The progress strip and heading reveals set up in their own tasks, after the pins.
     let progress = () => {};
     let split = () => {};
@@ -420,7 +449,10 @@ export function initDirector(opts: {
     });
 
     // Refresh once fonts are in (line breaks move) and again when the stage exists.
-    void document.fonts.ready.then(() => ScrollTrigger.refresh());
+    void document.fonts.ready.then(() => {
+      ScrollTrigger.refresh();
+      jumpToHash();
+    });
 
     return () => {
       later.forEach(clearTimeout);

@@ -30,6 +30,8 @@ interface TextFieldOpts {
   multiline?: boolean;
   counter?: boolean;
   spellcheck?: boolean;
+  /** Pairs up with a neighbour when the ticket is wide (container query). */
+  half?: boolean;
 }
 
 function textField(o: TextFieldOpts): Raw {
@@ -38,7 +40,7 @@ function textField(o: TextFieldOpts): Raw {
   const describedby = [hintId, countId].filter(Boolean).join(' ');
   const common = html`id="${o.id}"
   name="${o.name}"${attr(!!o.required, 'required')}${attr(!!o.maxlength, 'maxlength', String(o.maxlength ?? ''))}${attr(!!o.autocomplete, 'autocomplete', o.autocomplete ?? '')}${attr(!!describedby, 'aria-describedby', describedby)}${attr(o.spellcheck === false, 'spellcheck', 'false')}`;
-  return html`<div class="field" data-field="${o.name}">
+  return html`<div class="field${o.half ? ' field--half' : ''}" data-field="${o.name}">
     <label class="field__label" for="${o.id}">${o.label} ${req(!!o.required)}</label>
     ${o.hint ? html`<p class="field__hint" id="${hintId}">${o.hint}</p>` : ''}
     ${
@@ -118,8 +120,8 @@ function briefForm(): Raw {
     </div>
     ${step(
       0,
-      html`${textField({ id: 'f-brand', name: 'brand', label: f.brand, required: true, maxlength: 80, autocomplete: 'organization', spellcheck: false })}
-      ${textField({ id: 'f-current', name: 'current', label: f.current, hint: f.currentHint, maxlength: 200, inputmode: 'url', autocomplete: 'url', spellcheck: false })}
+      html`${textField({ id: 'f-brand', name: 'brand', label: f.brand, half: true, required: true, maxlength: 80, autocomplete: 'organization', spellcheck: false })}
+      ${textField({ id: 'f-current', name: 'current', label: f.current, half: true, hint: f.currentHint, maxlength: 200, inputmode: 'url', autocomplete: 'url', spellcheck: false })}
       ${chipGroup({ id: 'f-does', name: 'does', legend: f.does, options: f.doesOptions, required: true })}`,
     )}
     ${step(
@@ -136,10 +138,10 @@ function briefForm(): Raw {
     )}
     ${step(
       3,
-      html`${textField({ id: 'f-name', name: 'name', label: f.name, required: true, maxlength: 100, autocomplete: 'name' })}
-      ${textField({ id: 'f-email', name: 'email', label: f.email, required: true, type: 'email', maxlength: 200, autocomplete: 'email', spellcheck: false })}
-      ${textField({ id: 'f-based', name: 'based', label: f.based, maxlength: 100, autocomplete: 'address-level2' })}
-      ${textField({ id: 'f-assets', name: 'assets', label: f.assets, hint: f.assetsHint, maxlength: 300, inputmode: 'url', spellcheck: false })}`,
+      html`${textField({ id: 'f-name', name: 'name', label: f.name, half: true, required: true, maxlength: 100, autocomplete: 'name' })}
+      ${textField({ id: 'f-email', name: 'email', label: f.email, half: true, required: true, type: 'email', maxlength: 200, autocomplete: 'email', spellcheck: false })}
+      ${textField({ id: 'f-based', name: 'based', label: f.based, half: true, maxlength: 100, autocomplete: 'address-level2' })}
+      ${textField({ id: 'f-assets', name: 'assets', label: f.assets, half: true, hint: f.assetsHint, maxlength: 300, inputmode: 'url', spellcheck: false })}`,
     )}
     <label class="honeypot" aria-hidden="true"
       >Leave this box empty<input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off"

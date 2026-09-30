@@ -72,7 +72,12 @@ export function isSoftwareRenderer(gl: WebGLRenderingContext | WebGL2RenderingCo
   }
 }
 
-/** Tracks frame times and reports when the tier should step down. */
+/**
+ * Tracks frame times and reports when the tier should step down: a typical frame over a
+ * window (one second) takes longer than the budget (20 ms). "Typical" is the median, so
+ * single stalls (a shader compile, a big texture upload) never downgrade the scene, while
+ * sustained slowness, from 25 ms frames to a steady 10 fps, always does.
+ */
 export class FrameMonitor {
   private samples: number[] = [];
   private since = 0;
@@ -80,21 +85,24 @@ export class FrameMonitor {
   constructor(
     private readonly budgetMs = 20,
     private readonly windowMs = 1000,
+    private readonly minSamples = 6,
   ) {}
 
-  /** Returns true when the average over the last second exceeds the budget. */
+  /** Returns true when the median frame time over the last window exceeds the budget. */
   push(dtMs: number, now: number): boolean {
     if (dtMs > 250) {
       // A long gap is a hidden tab or a pause, not a slow frame.
       this.reset(now);
       return false;
     }
-    this.samples.push(dtMs);
     if (!this.since) this.since = now;
+    this.samples.push(dtMs);
     if (now - this.since < this.windowMs) return false;
-    const avg = this.samples.reduce((a, b) => a + b, 0) / this.samples.length;
+    const sorted = [...this.samples].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+    const enough = sorted.length >= this.minSamples;
     this.reset(now);
-    return avg > this.budgetMs;
+    return enough && median > this.budgetMs;
   }
 
   reset(now = 0): void {

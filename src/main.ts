@@ -23,9 +23,10 @@ const director = initDirector({
   reducedMotion,
   onSampleNeeded: (instant) => samplePrintIfNeeded(instant),
 });
+// fireNow: a visitor returning within the session gets their tinted sweep straight away.
 brand.subscribe((_s, meta) => {
   if (meta.personalised) director.printed();
-});
+}, true);
 
 // ---------- S0 Press check: four ink levels tied to real readiness ----------
 

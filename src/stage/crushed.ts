@@ -80,5 +80,7 @@ export async function startCrushed(slot: HTMLElement): Promise<void> {
   stage.setAnchor(slot, 0.8);
   stage.onFirstFrame(() => canvas.classList.add('is-ready'));
   stage.snapNext();
-  addEventListener('pagehide', () => stage.dispose(), { once: true });
+  addEventListener('pagehide', (e) => {
+    if (!e.persisted) stage.dispose();
+  });
 }

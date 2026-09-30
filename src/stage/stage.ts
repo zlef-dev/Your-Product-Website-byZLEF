@@ -3,6 +3,8 @@
  * demand, reads the Stage state with light damping, and never listens to scroll itself.
  */
 import {
+  BackSide,
+  DoubleSide,
   NeutralToneMapping,
   Color,
   Group,
@@ -12,6 +14,7 @@ import {
   Scene,
   SRGBColorSpace,
   WebGLRenderer,
+  WebGLRenderTarget,
   type Material,
   type Object3D,
   Texture,
@@ -165,6 +168,9 @@ export class Stage {
     // Production skips the synchronous shader status checks: faster compiles, and D3D11's
     // harmless HLSL compiler notes don't surface as console warnings.
     r.debug.checkShaderErrors = import.meta.env.DEV;
+    // The glass only refracts a soft, blurred backdrop: a half-resolution buffer costs a
+    // quarter of the fill rate and is indistinguishable.
+    r.transmissionResolutionScale = 0.5;
     r.setClearColor(0x000000, 0);
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.settings.dpr));
     this.resize();
@@ -194,6 +200,8 @@ export class Stage {
 
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('resize', this.onResize);
+    canvas.addEventListener('webglcontextlost', this.onContextLost);
+    canvas.addEventListener('webglcontextrestored', this.onContextRestored);
   }
 
   // ---------- Setup ----------
@@ -243,11 +251,59 @@ export class Stage {
         // An optimisation only; the first render compiles anything left.
       }
     }
+    await this.whenReady(pending);
+  }
+
+  /** Waits (without blocking) until the programs of these materials have finished linking. */
+  private async whenReady(materials: Material[]): Promise<void> {
     type ProgramProps = { currentProgram?: { isReady(): boolean } };
     const ready = (m: Material) =>
       (this.renderer.properties.get(m) as ProgramProps).currentProgram?.isReady() ?? true;
-    for (let i = 0; i < 400 && pending.some((m) => !ready(m)); i++)
+    for (let i = 0; i < 400 && materials.some((m) => !ready(m)); i++)
       await new Promise((r) => setTimeout(r, 16));
+  }
+
+  /**
+   * With transmission on (the glass bottle, high tier), three draws every opaque object into
+   * an offscreen linear buffer before the glass, and the glass's back faces too. Each needs
+   * its own program variant, and they were compiled synchronously the first time the
+   * bottle came into view (ten shaders, half a second). Compiling once with a dummy linear
+   * target bound makes three build exactly those variants ahead of time, in parallel.
+   * The target is bound only around the synchronous compile calls, never across an await,
+   * so no frame can draw into it.
+   */
+  async compileTransmissionVariants(): Promise<void> {
+    if (!this.settings.transmission || !this.renderer.extensions.has('KHR_parallel_shader_compile')) return;
+    const probe = new WebGLRenderTarget(4, 4);
+    const previous = this.renderer.getRenderTarget();
+    const pending: Material[] = [];
+    this.renderer.setRenderTarget(probe);
+    try {
+      this.scene.traverse((o) => {
+        const m = (o as Mesh).material as (Material & { transmission?: number }) | undefined;
+        if (!m || Array.isArray(m)) return;
+        const glass = (m.transmission ?? 0) > 0;
+        if (m.transparent && !glass) return;
+        try {
+          const back = glass && m.side === DoubleSide;
+          if (back) {
+            m.side = BackSide;
+            m.needsUpdate = true;
+          }
+          this.renderer.compile(o, this.camera, this.scene).forEach((x) => pending.push(x));
+          if (back) {
+            m.side = DoubleSide;
+            m.needsUpdate = true;
+          }
+        } catch {
+          // An optimisation only.
+        }
+      });
+    } finally {
+      this.renderer.setRenderTarget(previous);
+    }
+    await this.whenReady(pending);
+    probe.dispose();
   }
 
   /** After the first frame: compile everything still hidden, a little at a time. */
@@ -280,7 +336,9 @@ export class Stage {
     lineup.setBrandColour(this.brand);
     lineup.setTransmission(this.settings.transmission);
     this.scene.add(lineup.group);
-    void this.compile('all').then(() => this.invalidate());
+    void this.compile('all')
+      .then(() => this.compileTransmissionVariants())
+      .then(() => this.invalidate());
   }
 
   hasLineup(): boolean {
@@ -633,6 +691,24 @@ export class Stage {
 
   // ---------- Housekeeping ----------
 
+  /**
+   * Phones drop WebGL contexts under memory pressure. three.js re-initialises its own state
+   * on restore, but render targets lose their contents: the baked reflection environment
+   * must be rebuilt, or the metal would go black.
+   */
+  private onContextLost = (e: Event) => {
+    e.preventDefault();
+    this.stop();
+  };
+
+  private onContextRestored = () => {
+    void createEnvironment(this.renderer).then((env) => {
+      if (this.disposed) return;
+      this.scene.environment = env;
+      this.invalidate();
+    });
+  };
+
   private onVisibility = () => {
     if (document.hidden) this.stop();
     else this.invalidate();
@@ -657,6 +733,8 @@ export class Stage {
     this.stop();
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('resize', this.onResize);
+    this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
+    this.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
     this.can.dispose();
     this.lineup?.dispose();
     this.fizz?.dispose();

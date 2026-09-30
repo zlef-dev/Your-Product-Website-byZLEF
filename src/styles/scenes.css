@@ -122,6 +122,7 @@
 
 .is-motion .try__panel {
   min-height: 0;
+  scroll-padding-block: 1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   margin-inline: calc(var(--margin) * -1);

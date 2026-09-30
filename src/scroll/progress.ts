@@ -37,13 +37,19 @@ export function initProgress(): () => void {
       start: i === 0 ? 'top top' : 'top 60%',
       end: i === total - 1 ? 'bottom bottom' : 'bottom 60%',
       onUpdate: (self) => setFill(self.progress),
-      onRefresh: (self) => setFill(self.progress),
+      onRefresh: (self) => {
+        setFill(self.progress);
+        // Created (or re-measured) while already inside this scene, e.g. after a reload or a
+        // deep link: onToggle won't fire, so pick the scene up here.
+        if (self.isActive) setActive(i);
+      },
       onToggle: (self) => {
         if (self.isActive) setActive(i);
       },
     });
   });
 
-  setActive(0);
+  const current = triggers.findIndex((t) => t?.isActive);
+  setActive(current >= 0 ? current : 0);
   return () => triggers.forEach((t) => t?.kill());
 }

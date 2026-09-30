@@ -22,14 +22,30 @@ const pct = (arr, p) => {
 for (const throttle of [1, 4]) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const cdp = await page.context().newCDPSession(page);
-  await page.goto(`${url}/`, { waitUntil: 'networkidle' });
+  // PERF_TIER=medium|low forces a lower tier (via the ?debug hook) to compare tiers.
+  const forced = process.env.PERF_TIER;
+  await page.goto(`${url}/${forced ? '?debug' : ''}`, { waitUntil: 'networkidle' });
   // Let the stage boot and the line-up load before measuring.
   await page.waitForTimeout(6000);
+  if (forced) {
+    await page.evaluate(
+      (steps) => {
+        for (let i = 0; i < steps; i++) window.__stage.stepDown();
+      },
+      forced === 'low' ? 2 : 1,
+    );
+  }
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
   await page.evaluate(() => {
     const w = window;
     w.__frames = [];
     w.__hitches = [];
+    w.__longtasks = [];
+    new PerformanceObserver((list) =>
+      list
+        .getEntries()
+        .forEach((e) => w.__longtasks.push({ ms: Math.round(e.duration), scrollY: Math.round(scrollY) })),
+    ).observe({ type: 'longtask' });
     let last = performance.now();
     const tick = (now) => {
       w.__frames.push(now - last);
@@ -48,9 +64,9 @@ for (const throttle of [1, 4]) {
     await page.waitForTimeout(60);
   }
   await page.waitForTimeout(1500);
-  const { frames, hitches } = await page.evaluate(() => {
+  const { frames, hitches, longtasks } = await page.evaluate(() => {
     cancelAnimationFrame(window.__raf);
-    return { frames: window.__frames.slice(1), hitches: window.__hitches };
+    return { frames: window.__frames.slice(1), hitches: window.__hitches, longtasks: window.__longtasks };
   });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   const key = `${throttle}x`;
@@ -63,6 +79,13 @@ for (const throttle of [1, 4]) {
     over33ms: frames.filter((f) => f > 33).length,
     over50ms: frames.filter((f) => f > 50).length,
     hitches,
+    // Main-thread tasks over 50 ms during the scroll; the budget is none over 200 ms after load.
+    longTasks: {
+      count: longtasks.length,
+      over200ms: longtasks.filter((t) => t.ms > 200).length,
+      max: Math.max(0, ...longtasks.map((t) => t.ms)),
+      all: longtasks,
+    },
   };
   console.log(`${key} CPU:`, results[key]);
   await page.close();
@@ -70,7 +93,7 @@ for (const throttle of [1, 4]) {
 
 await mkdir('qa', { recursive: true });
 await writeFile(
-  'qa/perf.json',
+  process.env.PERF_TIER ? `qa/perf-${process.env.PERF_TIER}.json` : 'qa/perf.json',
   JSON.stringify(
     { date: new Date().toISOString(), viewport: '1440x900', gpu: launchOptions().args, results },
     null,

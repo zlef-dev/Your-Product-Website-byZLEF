@@ -11,7 +11,11 @@ export const cropMarks = (extra = ''): Raw =>
 /** Header shared by every page. On sub-pages the links point back to the home page. */
 export function header(home: boolean): Raw {
   const base = home ? '' : '/';
-  return html`<a class="skip-link" href="${base}#brief" data-start-brief>${chrome.skip}</a>
+  // The home page skips to the brief; the other pages have no brief, so they skip to the content.
+  const skip = home
+    ? html`<a class="skip-link" href="#brief" data-start-brief>${chrome.skip}</a>`
+    : html`<a class="skip-link" href="#main">${chrome.skipContent}</a>`;
+  return html`${skip}
     <header class="site-header">
       <a class="wordmark" href="/" data-wordmark>${wordmark}</a>
       <a class="button button--brand site-header__cta" href="${base}#brief" data-start-brief

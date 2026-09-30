@@ -5,7 +5,7 @@ import { header, siteFooter } from './partials.ts';
 
 export function notFoundBody(): string {
   return html`${header(false)}
-    <main id="main" class="page page--404">
+    <main id="main" tabindex="-1" class="page page--404">
       <section class="oos" aria-labelledby="oos-title">
         <div class="stage-slot oos__slot" data-slot="crushed" aria-hidden="true"></div>
         <div class="oos__copy">
@@ -20,7 +20,7 @@ export function notFoundBody(): string {
 
 export function privacyBody(): string {
   return html`${header(false)}
-    <main id="main" class="page page--privacy">
+    <main id="main" tabindex="-1" class="page page--privacy">
       <article class="prose" aria-labelledby="privacy-title">
         <h1 class="heading" id="privacy-title">${privacy.h1}</h1>
         <p>${privacy.body}</p>

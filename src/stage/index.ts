@@ -112,7 +112,11 @@ export async function startStage(opts: {
     .then(() => idle(4000))
     .then(() => loadExtras(stage));
 
-  addEventListener('pagehide', () => stage.dispose(), { once: true });
+  // Not when the page is only entering the back/forward cache: it may come back, and a
+  // disposed stage would leave a dead canvas.
+  addEventListener('pagehide', (e) => {
+    if (!e.persisted) stage.dispose();
+  });
   return { stage, view, link };
 }
 

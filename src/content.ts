@@ -18,6 +18,7 @@ export const meta = {
 
 export const chrome = {
   skip: 'Skip to the brief',
+  skipContent: 'Skip to the content',
   startBrief: 'Start a brief',
   sceneIndex: 'Scenes',
   sceneLabel: (n: number, total: number, name: string) => `Scene ${n} of ${total}: ${name}`,

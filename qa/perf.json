@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-29T20:44:54.567Z",
+  "date": "2026-09-30T00:17:57.183Z",
   "viewport": "1440x900",
   "gpu": [
     "--enable-gpu",
@@ -8,78 +8,208 @@
   ],
   "results": {
     "1x": {
-      "frames": 817,
+      "frames": 865,
       "p50": 16.7,
       "p95": 16.8,
-      "p99": 33.4,
-      "worst": 500,
-      "over33ms": 9,
-      "over50ms": 8,
+      "p99": 16.8,
+      "worst": 66.6,
+      "over33ms": 7,
+      "over50ms": 2,
       "hitches": [
         {
-          "scrollY": 207,
-          "ms": 167
-        },
-        {
-          "scrollY": 2368,
-          "ms": 250
-        },
-        {
-          "scrollY": 2872,
-          "ms": 500
-        },
-        {
-          "scrollY": 2879,
-          "ms": 367
-        },
-        {
-          "scrollY": 2957,
-          "ms": 167
-        },
-        {
-          "scrollY": 2991,
-          "ms": 250
-        },
-        {
-          "scrollY": 4590,
-          "ms": 133
-        },
-        {
-          "scrollY": 7625,
-          "ms": 200
-        }
-      ]
-    },
-    "4x": {
-      "frames": 809,
-      "p50": 16.7,
-      "p95": 16.8,
-      "p99": 33.4,
-      "worst": 116.6,
-      "over33ms": 15,
-      "over50ms": 5,
-      "hitches": [
-        {
-          "scrollY": 2330,
-          "ms": 117
-        },
-        {
-          "scrollY": 2781,
-          "ms": 83
-        },
-        {
-          "scrollY": 2850,
+          "scrollY": 266,
           "ms": 67
         },
         {
-          "scrollY": 3354,
-          "ms": 50
+          "scrollY": 11071,
+          "ms": 67
+        }
+      ],
+      "longTasks": {
+        "count": 1,
+        "over200ms": 0,
+        "max": 64,
+        "all": [
+          {
+            "ms": 64,
+            "scrollY": 11062
+          }
+        ]
+      }
+    },
+    "4x": {
+      "frames": 815,
+      "p50": 16.7,
+      "p95": 33.4,
+      "p99": 100,
+      "worst": 233.3,
+      "over33ms": 67,
+      "over50ms": 20,
+      "hitches": [
+        {
+          "scrollY": 2101,
+          "ms": 117
         },
         {
-          "scrollY": 7430,
+          "scrollY": 2218,
+          "ms": 167
+        },
+        {
+          "scrollY": 2248,
+          "ms": 83
+        },
+        {
+          "scrollY": 2335,
+          "ms": 67
+        },
+        {
+          "scrollY": 2417,
+          "ms": 67
+        },
+        {
+          "scrollY": 3371,
+          "ms": 67
+        },
+        {
+          "scrollY": 4832,
+          "ms": 83
+        },
+        {
+          "scrollY": 5095,
+          "ms": 67
+        },
+        {
+          "scrollY": 5235,
+          "ms": 117
+        },
+        {
+          "scrollY": 5431,
           "ms": 100
+        },
+        {
+          "scrollY": 7406,
+          "ms": 233
+        },
+        {
+          "scrollY": 7488,
+          "ms": 100
+        },
+        {
+          "scrollY": 7622,
+          "ms": 83
+        },
+        {
+          "scrollY": 7735,
+          "ms": 67
+        },
+        {
+          "scrollY": 8087,
+          "ms": 100
+        },
+        {
+          "scrollY": 8102,
+          "ms": 117
+        },
+        {
+          "scrollY": 9246,
+          "ms": 67
+        },
+        {
+          "scrollY": 9443,
+          "ms": 233
+        },
+        {
+          "scrollY": 9561,
+          "ms": 133
+        },
+        {
+          "scrollY": 9682,
+          "ms": 133
         }
-      ]
+      ],
+      "longTasks": {
+        "count": 19,
+        "over200ms": 1,
+        "max": 203,
+        "all": [
+          {
+            "ms": 120,
+            "scrollY": 2038
+          },
+          {
+            "ms": 59,
+            "scrollY": 2335
+          },
+          {
+            "ms": 71,
+            "scrollY": 2335
+          },
+          {
+            "ms": 58,
+            "scrollY": 3277
+          },
+          {
+            "ms": 70,
+            "scrollY": 3371
+          },
+          {
+            "ms": 82,
+            "scrollY": 4832
+          },
+          {
+            "ms": 66,
+            "scrollY": 5095
+          },
+          {
+            "ms": 119,
+            "scrollY": 5235
+          },
+          {
+            "ms": 102,
+            "scrollY": 5446
+          },
+          {
+            "ms": 146,
+            "scrollY": 7406
+          },
+          {
+            "ms": 71,
+            "scrollY": 7735
+          },
+          {
+            "ms": 111,
+            "scrollY": 8152
+          },
+          {
+            "ms": 85,
+            "scrollY": 8152
+          },
+          {
+            "ms": 58,
+            "scrollY": 8152
+          },
+          {
+            "ms": 74,
+            "scrollY": 9246
+          },
+          {
+            "ms": 203,
+            "scrollY": 9443
+          },
+          {
+            "ms": 144,
+            "scrollY": 9561
+          },
+          {
+            "ms": 139,
+            "scrollY": 9682
+          },
+          {
+            "ms": 73,
+            "scrollY": 12044
+          }
+        ]
+      }
     }
   }
 }

@@ -5,6 +5,9 @@
 }
 
 html {
+  /* Keyboard focus and in-page jumps never land under the fixed header or progress strip
+     (WCAG 2.2 Focus Not Obscured). */
+  scroll-padding-block: calc(var(--header-h) + 0.5rem) 5rem;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   background: var(--paper);
@@ -86,6 +89,10 @@ select {
 ::selection {
   background: var(--brand);
   color: var(--brand-ink);
+}
+
+main:focus {
+  outline: none;
 }
 
 :focus-visible {
@@ -299,4 +306,16 @@ p {
 }
 .crop span:nth-child(n + 3)::after {
   top: 6px;
+}
+
+/* Reduced motion: no animated transitions or keyframes anywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

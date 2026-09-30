@@ -460,9 +460,10 @@ export function drawLabel(ctx: Ctx, w: number, h: number, p: DrawParams): void {
 /** A shipping sticker printed onto the front of the sleeve when a brief is sent. */
 export function drawSticker(ctx: Ctx, w: number, h: number, job: string): void {
   const sw = w * 0.2;
-  const sh = h * 0.34;
+  const sh = h * 0.4;
+  const inner = sw * 0.84;
   ctx.save();
-  ctx.translate(w * 0.5, h * 0.62);
+  ctx.translate(w * 0.5, h * 0.6);
   ctx.rotate(-0.07);
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
@@ -472,21 +473,35 @@ export function drawSticker(ctx: Ctx, w: number, h: number, job: string): void {
   ctx.fillStyle = K;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  setFont(ctx, FONTS.wide, h * 0.075);
-  ctx.fillText(labelCopy.shipped, 0, -sh * 0.18);
-  setFont(ctx, FONTS.smallBold, h * 0.045);
-  ctx.fillText(job, 0, sh * 0.04);
+
+  // Every line is fitted to the sticker, whatever the resolution or the job number.
+  const title = fitText(labelCopy.shipped, inner, sh * 0.2, measurer(ctx, FONTS.wide), {
+    lineHeight: 1,
+    maxLines: 1,
+    maxSize: h * 0.075,
+  });
+  setFont(ctx, FONTS.wide, title.size);
+  ctx.fillText(labelCopy.shipped, 0, -sh * 0.2);
+
+  const jobLine = fitText(job, inner, sh * 0.12, measurer(ctx, FONTS.smallBold), {
+    lineHeight: 1,
+    maxLines: 1,
+    maxSize: h * 0.045,
+  });
+  setFont(ctx, FONTS.smallBold, jobLine.size);
+  ctx.fillText(job, 0, -sh * 0.06);
+
   // Decorative postal bars.
   const bars = barcodeFor(job).modules;
   const total = bars.reduce((a, b) => a + b, 0);
-  const bw = (sw * 0.7) / total;
-  let x = -sw * 0.35;
+  const bw = inner / total;
+  let x = -inner / 2;
   bars.forEach((m, i) => {
-    if (i % 2 === 0) ctx.fillRect(x, sh * 0.1, m * bw, sh * 0.16);
+    if (i % 2 === 0) ctx.fillRect(x, sh * 0.02, m * bw, sh * 0.16);
     x += m * bw;
   });
-  setFont(ctx, FONTS.small, h * 0.03);
-  ctx.fillText(labelCopy.stickerNote, 0, sh * 0.39);
+
+  smallPrint(ctx, [labelCopy.stickerNote], 0, sh * 0.3, inner, h * 0.03, K, 'center');
   ctx.restore();
 }
 

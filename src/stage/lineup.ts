@@ -51,7 +51,16 @@ function bandGeometry(radius: number, height: number, arc: number, y: number): C
 export class Lineup {
   readonly group = new Group();
   private items: Group[] = [];
-  private glass: MeshPhysicalMaterial;
+  /** Real transmission (high tier) and a tinted transparent glass (everything else). */
+  private glassSolid: MeshPhysicalMaterial;
+  private glassTint: MeshPhysicalMaterial;
+  private bottleBody: Mesh;
+  /**
+   * Invisible, and always wearing whichever glass is *not* in use, so the scene's shader
+   * compile covers both. A runtime quality step-down is then a material swap rather than a
+   * synchronous compile on a machine that is already struggling.
+   */
+  private glassProbe: Mesh;
   private brandParts: MeshPhysicalMaterial[] = [];
   private bottleLabel: MeshPhysicalMaterial;
   private jarLabel: MeshPhysicalMaterial;
@@ -65,22 +74,26 @@ export class Lineup {
 
     // ---------- Bottle ----------
     const bottle = new Group();
-    this.glass = new MeshPhysicalMaterial({
+    const glass = {
       color: new Color('#E6F0E8'),
       metalness: 0,
       roughness: 0.05,
       ior: 1.5,
       thickness: 0.3,
-      transmission: 0,
-      transparent: true,
-      opacity: 0.42,
-      depthWrite: false,
       side: DoubleSide,
       attenuationColor: new Color('#CFE6D5'),
       attenuationDistance: 1.6,
       specularIntensity: 1,
+    } as const;
+    this.glassSolid = new MeshPhysicalMaterial({ ...glass, transmission: 1 });
+    this.glassTint = new MeshPhysicalMaterial({
+      ...glass,
+      transmission: 0,
+      transparent: true,
+      opacity: 0.42,
+      depthWrite: false,
     });
-    const bottleBody = new Mesh(
+    const glassBody = new Mesh(
       lathe(
         [
           [0, 0.02],
@@ -102,9 +115,13 @@ export class Lineup {
         ],
         segments,
       ),
-      this.glass,
+      this.glassTint,
     );
-    bottleBody.renderOrder = 3;
+    this.bottleBody = glassBody;
+    this.bottleBody.renderOrder = 3;
+    this.glassProbe = new Mesh(this.bottleBody.geometry, this.glassSolid);
+    this.glassProbe.visible = false;
+    this.glassProbe.name = 'glass-probe';
     const cap = new Mesh(
       lathe(
         [
@@ -125,7 +142,7 @@ export class Lineup {
       bandGeometry(BOTTLE.radius * 1.004, BOTTLE.labelHeight, BOTTLE.labelArc, BOTTLE.labelBottom),
       this.bottleLabel,
     );
-    bottle.add(bottleBody, cap, bottleBand, createContactShadow(1.3, 1.3, 0.55));
+    bottle.add(this.bottleBody, this.glassProbe, cap, bottleBand, createContactShadow(1.3, 1.3, 0.55));
 
     // ---------- Jar ----------
     const jar = new Group();
@@ -195,7 +212,15 @@ export class Lineup {
 
     this.items = [new Group(), bottle, jar, box];
     this.items.slice(1).forEach((g) => this.group.add(g));
-    this.materials = [this.glass, ceramic, kraft, this.bottleLabel, this.jarLabel, this.boxDecal];
+    this.materials = [
+      this.glassSolid,
+      this.glassTint,
+      ceramic,
+      kraft,
+      this.bottleLabel,
+      this.jarLabel,
+      this.boxDecal,
+    ];
   }
 
   private brandMaterial(): MeshPhysicalMaterial {
@@ -225,12 +250,8 @@ export class Lineup {
   setTransmission(on: boolean): void {
     if (on === this.transmission) return;
     this.transmission = on;
-    const g = this.glass;
-    g.transmission = on ? 1 : 0;
-    g.transparent = !on;
-    g.opacity = on ? 1 : 0.42;
-    g.depthWrite = on;
-    g.needsUpdate = true;
+    this.bottleBody.material = on ? this.glassSolid : this.glassTint;
+    this.glassProbe.material = on ? this.glassTint : this.glassSolid;
   }
 
   update(s: StageState, _time: number): void {
