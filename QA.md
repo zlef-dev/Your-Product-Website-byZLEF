@@ -10,7 +10,7 @@ Everything here was run on the build in this repository on 2026-09-30, on Window
 | Lint                            | `npm run lint`                                                  | 0 errors, 0 warnings                                                  |
 | Unit tests (Vitest)             | `npm run test`                                                  | 75 passed in 5 files                                                  |
 | Build                           | `npm run build`                                                 | passes                                                                |
-| End-to-end (Playwright)         | `npm run test:e2e`                                              | 62 passed, 2 skipped (Chromium and WebKit; Firefox not runnable here) |
+| End-to-end (Playwright)         | `npm run test:e2e`                                              | 64 passed, 2 skipped (Chromium and WebKit; Firefox not runnable here) |
 
 ### Unit tests (`tests/unit/`)
 
@@ -20,7 +20,7 @@ Text fitting (one/two lines, balanced breaks, never overflowing, 32-character na
 
 Every test fails on any console error or warning, or uncaught page error. They run against production builds served with the production headers (the CSP from `build/headers.ts`). Three builds are served: with a test Web3Forms key, without a key, and fully configured (studio name, email, site URL and social links set through the optional `VITE_*` overrides in `src/config.ts`).
 
-- **Home:** hero renders; typing a brand updates the live region, tab title, footer headline, brief heading and form prefill; choosing a colour updates `--brand` and `--brand-ink`; "Download your can" produces a PNG; the can turns by keyboard and buttons; "Start a brief" moves focus to the brief heading; the progress strip opens a `<nav>` scene index whose links move focus; the skip link is the first tab stop; no request leaves the site before a brief is sent; `/#brief` lands on the brief and the progress label says so; Tab reaches the footer through the pinned scenes with no trap and focus always on screen; the stage keeps rendering, with its reflections, after a lost and restored WebGL context.
+- **Home:** hero renders; typing a brand updates the live region, tab title, footer headline, brief heading and form prefill; choosing a colour updates `--brand` and `--brand-ink`; "Download your can" produces a PNG; the can turns by keyboard and buttons; "Start a brief" moves focus to the brief heading; the progress strip opens a `<nav>` scene index whose links move focus; the skip link is the first tab stop; no request leaves the site before a brief is sent; `/#brief` lands on the brief and the progress label says so; after loading on `#brief`, scrolling back up still drives the stage (no frozen launch wash); Tab reaches the footer through the pinned scenes with no trap and focus always on screen; the stage keeps rendering, with its reflections, after a lost and restored WebGL context.
 - **Form:** errors are text linked with `aria-describedby`, summarised at the top of the step, focus goes to the first invalid field; validation waits for blur; steps change by keyboard with focus on the legend and "Step 2 of 4: The website" announced; the price note exists once and shows only in the details step; mocked Web3Forms success (payload checked) shows the success message and job number; a refusal and a dropped connection each show the error and keep every field; without a key, "Send brief" opens a mailto draft with the whole brief and "Copy brief" appears.
 - **Configured site:** title, canonical, `og:url`, `og:image`, `twitter:image` and `og:site_name` use the configured values; JSON-LD carries name, url, email, image, address and `sameAs` and no price; `sitemap.xml` lists both pages and `robots.txt` points to it; the footer shows the email with a working copy button and the social links; the mailto fallback is addressed to the studio.
 - **Fallbacks:** reduced-motion emulation gives no pins, no Lenis, all process steps and line-up captions on the page, an instant print and no intro strip; with `getContext` stubbed to return null for WebGL, the SVG can shows, prints, takes over the page and downloads a PNG.
@@ -72,6 +72,8 @@ Not done: subsetting the variable font (needs Python fonttools, not installed he
 p95 under 4× throttling is 16.8 ms (target: under 33 ms), and no task over 200 ms occurs anywhere on the page.
 
 ## Audit pass
+
+**Found by the owner, fixed:** after loading the page on `#brief` (which "Start a brief" puts in the URL), the stage froze at the end of the process scene: a full-screen brand-coloured wash with no products in the line-up scene, and the same wash even at the top of the page. Cause: my own deep-link fix called `gsap.killTweensOf` on the tween that smooths scroll into timeline time, so the timeline stopped following the scroll for the rest of the session. I had tested where a deep link landed, not that scrolling still worked afterwards. Fixed, covered by a regression test, and the deep-link jump now also stands down if the visitor has already scrolled away from where it landed (a scrollbar drag fires no wheel or key event).
 
 A second pass through the brief, running each item rather than trusting the earlier notes, found and fixed:
 

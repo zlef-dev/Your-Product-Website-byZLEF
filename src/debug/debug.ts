@@ -42,9 +42,14 @@ export function startDebug(stage: Stage | null): void {
     __stage?: Stage | null;
     __stageFrames?: () => number;
     __stageEnvironment?: () => boolean;
+    __stageTarget?: () => { wash: number; rise: number; lineup: number };
   };
   w.__stage = stage;
   // Read-only probes the end-to-end tests use to check the stage is still rendering.
   w.__stageFrames = () => stage?.renderer.info.render.frame ?? -1;
   w.__stageEnvironment = () => !!stage?.scene.environment;
+  w.__stageTarget = () => {
+    const t = stage?.target;
+    return { wash: t?.wash ?? -1, rise: t?.rise ?? -1, lineup: t?.lineup ?? -1 };
+  };
 }

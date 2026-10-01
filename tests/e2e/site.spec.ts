@@ -112,6 +112,25 @@ test.describe('home page', () => {
     expect(Math.abs(top)).toBeLessThan(100);
   });
 
+  test('after loading on #brief, scrolling back up still drives the stage (no frozen launch wash)', async ({
+    page,
+  }) => {
+    await page.goto('/?debug#brief');
+    await expect(page.locator('[data-progress-label]')).toHaveText('Scene 6 of 7: The brief', {
+      timeout: 15_000,
+    });
+    // Up into the line-up scene: no launch wash, the products are in.
+    await scrollToScene(page, 'lineup', 0.5);
+    await expect
+      .poll(() => page.evaluate(() => window.__stageTarget?.()), { timeout: 15_000 })
+      .toMatchObject({ wash: 0, rise: 0, lineup: 1 });
+    // And all the way back to the top: a blank white-label hero again, not the end of the process.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect
+      .poll(() => page.evaluate(() => window.__stageTarget?.()), { timeout: 15_000 })
+      .toMatchObject({ wash: 0, rise: 0, lineup: 0 });
+  });
+
   test('Tab reaches the footer through the pinned scenes with no trap, and focus stays on screen', async ({
     page,
     browserName,
@@ -154,11 +173,13 @@ test.describe('home page', () => {
     await page.waitForTimeout(600);
     await page.evaluate(() => (window as unknown as { __lose: WEBGL_lose_context }).__lose.restoreContext());
     await page.waitForTimeout(2500);
-    // Nudge a redraw and confirm frames render again with a reflection environment in place.
+    // three.js resets its frame counter when it re-initialises after a restore, so compare
+    // against a reading taken after the restore, not before the loss.
+    const restored = await page.evaluate(() => window.__stageFrames?.() ?? -1);
     await page.evaluate(() => window.scrollBy(0, 40));
     await page.waitForTimeout(1500);
     const after = await page.evaluate(() => window.__stageFrames?.() ?? -1);
-    expect(after).toBeGreaterThan(before);
+    expect(after).toBeGreaterThan(restored);
     expect(await page.evaluate(() => !!window.__stageEnvironment?.())).toBe(true);
   });
 });

@@ -419,17 +419,25 @@ export function initDirector(opts: {
     for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const) {
       addEventListener(type, () => (interacted = true), { once: true, passive: true });
     }
+    let landedAt: number | null = null;
     const jumpToHash = () => {
       const el = hashId && !interacted ? document.getElementById(hashId) : null;
       if (!el) return;
+      // A later pass (after fonts load) only corrects small layout shifts. If the page has
+      // since been scrolled far from where we landed (a scrollbar drag fires no wheel or key
+      // event), the visitor has moved on: leave them there.
+      if (landedAt !== null && Math.abs(scrollY - landedAt) > 400) return;
       const st = ScrollTrigger.getAll().find((t) => t.trigger === el && t.pin);
       const y = st ? st.start : el.getBoundingClientRect().top + scrollY;
       // Lenis clamps to the scroll limit it measured before the pins added their height.
       lenis.resize();
       lenis.scrollTo(y, { immediate: true, force: true });
       if (Math.abs(scrollY - y) > 2) window.scrollTo(0, y);
-      gsap.killTweensOf(proxy);
+      landedAt = scrollY;
+      // Land on the scene's moment without easing in from the top. The quickTo tween must be
+      // left alone: killing it (killTweensOf) stops the timeline following the scroll for good.
       proxy.time = timeFor(y);
+      toTime(proxy.time);
       tl.time(Math.min(proxy.time, tl.duration()));
     };
     jumpToHash();
