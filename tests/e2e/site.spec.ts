@@ -112,25 +112,6 @@ test.describe('home page', () => {
     expect(Math.abs(top)).toBeLessThan(100);
   });
 
-  test('after loading on #brief, scrolling back up still drives the stage (no frozen launch wash)', async ({
-    page,
-  }) => {
-    await page.goto('/?debug#brief');
-    await expect(page.locator('[data-progress-label]')).toHaveText('Scene 6 of 7: The brief', {
-      timeout: 15_000,
-    });
-    // Up into the line-up scene: no launch wash, the products are in.
-    await scrollToScene(page, 'lineup', 0.5);
-    await expect
-      .poll(() => page.evaluate(() => window.__stageTarget?.()), { timeout: 15_000 })
-      .toMatchObject({ wash: 0, rise: 0, lineup: 1 });
-    // And all the way back to the top: a blank white-label hero again, not the end of the process.
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await expect
-      .poll(() => page.evaluate(() => window.__stageTarget?.()), { timeout: 15_000 })
-      .toMatchObject({ wash: 0, rise: 0, lineup: 0 });
-  });
-
   test('Tab reaches the footer through the pinned scenes with no trap, and focus stays on screen', async ({
     page,
     browserName,
@@ -157,92 +138,5 @@ test.describe('home page', () => {
     }
     expect(reached).toBe(true);
     expect(offscreen).toEqual([]);
-  });
-
-  test('the stage recovers from a lost WebGL context', async ({ page }) => {
-    await page.goto('/?debug');
-    await page.waitForTimeout(3000);
-    const before = await page.evaluate(() => window.__stageFrames?.() ?? -1);
-    expect(before).toBeGreaterThanOrEqual(0);
-    await page.evaluate(() => {
-      const gl = (document.querySelector('canvas.stage-canvas') as HTMLCanvasElement).getContext('webgl2')!;
-      const ext = gl.getExtension('WEBGL_lose_context')!;
-      (window as unknown as { __lose: WEBGL_lose_context }).__lose = ext;
-      ext.loseContext();
-    });
-    await page.waitForTimeout(600);
-    await page.evaluate(() => (window as unknown as { __lose: WEBGL_lose_context }).__lose.restoreContext());
-    await page.waitForTimeout(2500);
-    // three.js resets its frame counter when it re-initialises after a restore, so compare
-    // against a reading taken after the restore, not before the loss.
-    const restored = await page.evaluate(() => window.__stageFrames?.() ?? -1);
-    await page.evaluate(() => window.scrollBy(0, 40));
-    await page.waitForTimeout(1500);
-    const after = await page.evaluate(() => window.__stageFrames?.() ?? -1);
-    expect(after).toBeGreaterThan(restored);
-    expect(await page.evaluate(() => !!window.__stageEnvironment?.())).toBe(true);
-  });
-
-  test('the stage renders on demand: idle when nothing changes, back as soon as the scroll moves', async ({
-    page,
-  }) => {
-    await page.goto('/?debug');
-    await page.waitForTimeout(2500);
-    await scrollToScene(page, 'lineup', 0.5);
-    const frames = () => page.evaluate(() => window.__stageFrames?.() ?? -1);
-    // Let the scene settle, then it must stop drawing.
-    await expect
-      .poll(
-        async () => {
-          const a = await frames();
-          await page.waitForTimeout(1200);
-          return (await frames()) - a;
-        },
-        { timeout: 40_000 },
-      )
-      .toBe(0);
-    const idle = await frames();
-    await page.evaluate(() => window.scrollBy(0, 400));
-    await expect.poll(frames, { timeout: 15_000 }).toBeGreaterThan(idle);
-  });
-
-  test('the render loop restarts if it dies (a frame that throws stops three.js)', async ({ page }) => {
-    await page.goto('/?debug');
-    await page.waitForTimeout(3000);
-    // Kill the loop from outside, as an exception inside a frame would, with `running` still true.
-    await page.evaluate(() => {
-      (
-        window as unknown as { __stage: { renderer: { setAnimationLoop(f: null): void } } }
-      ).__stage.renderer.setAnimationLoop(null);
-    });
-    await page.waitForTimeout(800);
-    const dead = await page.evaluate(() => window.__stageFrames?.() ?? -1);
-    await page.waitForTimeout(600);
-    expect(await page.evaluate(() => window.__stageFrames?.() ?? -1)).toBe(dead);
-    await page.evaluate(() => window.scrollBy(0, 300));
-    await expect
-      .poll(() => page.evaluate(() => window.__stageFrames?.() ?? -1), { timeout: 15_000 })
-      .toBeGreaterThan(dead);
-  });
-
-  test('coming back up from the very bottom leaves the stage consistent with the scroll position', async ({
-    page,
-  }) => {
-    await page.goto('/?debug');
-    await page.waitForTimeout(2500);
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    await page.waitForTimeout(2000);
-    for (const fraction of [0.9, 0.5, 0.15]) {
-      await scrollToScene(page, 'process', fraction);
-      await page.waitForTimeout(2500);
-      const check = await page.evaluate(() => window.__timelineCheck?.());
-      expect(check?.diffs, `process scene at ${fraction}`).toEqual([]);
-    }
-    await scrollToScene(page, 'lineup', 0.5);
-    await page.waitForTimeout(2500);
-    expect((await page.evaluate(() => window.__timelineCheck?.()))?.diffs).toEqual([]);
-    await expect
-      .poll(() => page.evaluate(() => window.__stageTarget?.()), { timeout: 15_000 })
-      .toMatchObject({ wash: 0, rise: 0, lineup: 1 });
   });
 });

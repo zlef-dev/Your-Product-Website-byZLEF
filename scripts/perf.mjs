@@ -22,19 +22,9 @@ const pct = (arr, p) => {
 for (const throttle of [1, 4]) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const cdp = await page.context().newCDPSession(page);
-  // PERF_TIER=medium|low forces a lower tier (via the ?debug hook) to compare tiers.
-  const forced = process.env.PERF_TIER;
-  await page.goto(`${url}/${forced ? '?debug' : ''}`, { waitUntil: 'networkidle' });
+  await page.goto(`${url}/`, { waitUntil: 'networkidle' });
   // Let the stage boot and the line-up load before measuring.
   await page.waitForTimeout(6000);
-  if (forced) {
-    await page.evaluate(
-      (steps) => {
-        for (let i = 0; i < steps; i++) window.__stage.stepDown();
-      },
-      forced === 'low' ? 2 : 1,
-    );
-  }
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
   await page.evaluate(() => {
     const w = window;
@@ -93,7 +83,7 @@ for (const throttle of [1, 4]) {
 
 await mkdir('qa', { recursive: true });
 await writeFile(
-  process.env.PERF_TIER ? `qa/perf-${process.env.PERF_TIER}.json` : 'qa/perf.json',
+  'qa/perf.json',
   JSON.stringify(
     { date: new Date().toISOString(), viewport: '1440x900', gpu: launchOptions().args, results },
     null,

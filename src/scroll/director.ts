@@ -157,9 +157,6 @@ export function initDirector(opts: {
   }
 
   ScrollTrigger.config({ ignoreMobileResize: true });
-  // ?debug draws ScrollTrigger's start/end markers (the frame-time readout is lazy-loaded
-  // separately by main.ts; markers are part of ScrollTrigger itself, so this is one flag).
-  if (new URLSearchParams(location.search).has('debug')) ScrollTrigger.defaults({ markers: true });
   const mm = gsap.matchMedia();
 
   // After first paint, in its own task: pins and timelines aren't needed to read the hero.
@@ -415,23 +412,6 @@ export function initDirector(opts: {
 
     ScrollTrigger.addEventListener('refresh', build);
     build();
-    if (new URLSearchParams(location.search).has('debug')) {
-      // Debug probe: re-render the timeline from scratch at its current time and report any
-      // stage value that differs from what is live. A mismatch means the live state drifted
-      // from what the scroll position says it should be.
-      (window as unknown as { __timelineCheck?: () => unknown }).__timelineCheck = () => {
-        const keys = Object.keys(DEFAULT_STATE) as Array<keyof StageState>;
-        const live = { ...T };
-        const t = tl.time();
-        tl.time(0).time(t);
-        const diffs = keys
-          .filter((k) => Math.abs((live[k] as number) - (T[k] as number)) > 0.02)
-          .map(
-            (k) => `${k}: live ${(live[k] as number).toFixed(2)} vs timeline ${(T[k] as number).toFixed(2)}`,
-          );
-        return { time: +t.toFixed(3), proxy: +proxy.time.toFixed(3), briefMode, diffs };
-      };
-    }
     // A reload mid-page starts at the right moment instead of replaying from the top.
     proxy.time = timeFor(scrollY);
     tl.time(Math.min(proxy.time, tl.duration()));

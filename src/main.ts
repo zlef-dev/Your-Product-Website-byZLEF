@@ -75,7 +75,4 @@ void import('./stage/index')
       setCanView(await startFallback());
       finishIntro();
     }
-    if (new URLSearchParams(location.search).has('debug')) {
-      void import('./debug/debug').then((m) => m.startDebug(handle?.stage ?? null));
-    }
   });

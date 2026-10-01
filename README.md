@@ -33,7 +33,7 @@ Other scripts:
 | `npm run og`                      | Screenshots the hero at 1200×630 into `public/og.png` (run after a build, then build again)              |
 | `npm run analyze`                 | Build with a bundle treemap at `qa/bundle.html`                                                          |
 
-The scripts that need a build (`screenshots`, `lighthouse`, `perf`, `og`) run `vite preview` themselves. Add `?debug` to the URL for a frame-time readout.
+The scripts that need a build (`screenshots`, `lighthouse`, `perf`, `og`) run `vite preview` themselves.
 
 ## Where to edit things
 
