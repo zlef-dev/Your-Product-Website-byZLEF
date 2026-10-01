@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-30T01:02:52.888Z",
+  "date": "2026-10-01T15:11:14.092Z",
   "viewport": "1440x900",
   "gpu": [
     "--enable-gpu",
@@ -8,12 +8,12 @@
   ],
   "results": {
     "1x": {
-      "frames": 815,
+      "frames": 812,
       "p50": 16.7,
       "p95": 16.8,
       "p99": 16.8,
-      "worst": 33.3,
-      "over33ms": 2,
+      "worst": 33.4,
+      "over33ms": 1,
       "over50ms": 0,
       "hitches": [],
       "longTasks": {
@@ -24,35 +24,35 @@
       }
     },
     "4x": {
-      "frames": 811,
+      "frames": 805,
       "p50": 16.7,
       "p95": 16.8,
       "p99": 33.3,
-      "worst": 100,
-      "over33ms": 10,
+      "worst": 116.7,
+      "over33ms": 11,
       "over50ms": 2,
       "hitches": [
         {
-          "scrollY": 2328,
-          "ms": 100
+          "scrollY": 2330,
+          "ms": 117
         },
         {
-          "scrollY": 7351,
-          "ms": 83
+          "scrollY": 7369,
+          "ms": 100
         }
       ],
       "longTasks": {
         "count": 2,
         "over200ms": 0,
-        "max": 117,
+        "max": 125,
         "all": [
           {
-            "ms": 117,
-            "scrollY": 2415
+            "ms": 125,
+            "scrollY": 2414
           },
           {
-            "ms": 97,
-            "scrollY": 7351
+            "ms": 109,
+            "scrollY": 7369
           }
         ]
       }

@@ -37,6 +37,8 @@ export interface StageLink {
   resetSpin(): void;
   ensureLineup(): void;
   setPointer(x: number, y: number): void;
+  /** The stage state changed: make sure the render loop is running (restarts a dead one). */
+  wake(): void;
   /** Prints the shipping sticker onto the label. */
   sticker(job: string): void;
 }
@@ -345,6 +347,7 @@ export function initDirector(opts: {
 
       tl.time(Math.min(time, tl.duration()));
       if (briefMode) enterBrief();
+      link?.wake();
     };
 
     // Scroll → timeline time, smoothed like scrub: 1.
@@ -354,12 +357,16 @@ export function initDirector(opts: {
       ease: 'power3',
       onUpdate: () => {
         if (!briefMode) tl.time(Math.min(proxy.time, tl.duration()));
+        link?.wake();
       },
     });
     const master = ScrollTrigger.create({
       start: 0,
       end: 'max',
-      onUpdate: (self) => toTime(timeFor(self.scroll())),
+      onUpdate: (self) => {
+        toTime(timeFor(self.scroll()));
+        link?.wake();
+      },
     });
 
     // ---------- Stage visibility: hidden for S5/S6 and the footer; the brief glues it to its slot ----------
@@ -408,6 +415,23 @@ export function initDirector(opts: {
 
     ScrollTrigger.addEventListener('refresh', build);
     build();
+    if (new URLSearchParams(location.search).has('debug')) {
+      // Debug probe: re-render the timeline from scratch at its current time and report any
+      // stage value that differs from what is live. A mismatch means the live state drifted
+      // from what the scroll position says it should be.
+      (window as unknown as { __timelineCheck?: () => unknown }).__timelineCheck = () => {
+        const keys = Object.keys(DEFAULT_STATE) as Array<keyof StageState>;
+        const live = { ...T };
+        const t = tl.time();
+        tl.time(0).time(t);
+        const diffs = keys
+          .filter((k) => Math.abs((live[k] as number) - (T[k] as number)) > 0.02)
+          .map(
+            (k) => `${k}: live ${(live[k] as number).toFixed(2)} vs timeline ${(T[k] as number).toFixed(2)}`,
+          );
+        return { time: +t.toFixed(3), proxy: +proxy.time.toFixed(3), briefMode, diffs };
+      };
+    }
     // A reload mid-page starts at the right moment instead of replaying from the top.
     proxy.time = timeFor(scrollY);
     tl.time(Math.min(proxy.time, tl.duration()));
@@ -439,6 +463,7 @@ export function initDirector(opts: {
       proxy.time = timeFor(y);
       toTime(proxy.time);
       tl.time(Math.min(proxy.time, tl.duration()));
+      link?.wake();
     };
     jumpToHash();
 
@@ -553,7 +578,7 @@ export function initDirector(opts: {
     shipped = true;
     call((l) => l.sticker(job));
     if (opts.reducedMotion) return;
-    gsap.to(T, { ship: 1, duration: 1.3, delay: 0.7, ease: 'power2.in' });
+    gsap.to(T, { ship: 1, duration: 1.3, delay: 0.7, ease: 'power2.in', onUpdate: () => link?.wake() });
   });
 
   return {
@@ -563,7 +588,7 @@ export function initDirector(opts: {
       ScrollTrigger.refresh();
     },
     printed() {
-      gsap.to(T, { tint: 1, duration: 0.8, ease: 'power2.out' });
+      gsap.to(T, { tint: 1, duration: 0.8, ease: 'power2.out', onUpdate: () => link?.wake() });
     },
   };
 }

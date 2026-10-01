@@ -121,6 +121,8 @@ export class Stage {
   private running = false;
   private visible = true;
   private lastT = 0;
+  private lastTick = 0;
+  private tickErrors = 0;
   private clock = 0;
   private spin = 0;
   private spinTarget = 0;
@@ -443,9 +445,18 @@ export class Stage {
   // ---------- Loop ----------
 
   invalidate(): void {
-    if (this.warming || this.running || this.disposed || !this.visible || document.hidden) return;
+    if (this.warming || this.disposed || !this.visible || document.hidden) return;
+    const now = performance.now();
+    if (this.running) {
+      // three.js stops asking for frames if anything inside a frame throws, while `running`
+      // would stay true and no later call could ever restart it: the canvas would freeze on
+      // its last frame. A loop that has not ticked for a while is dead: restart it.
+      if (now - this.lastTick < 500) return;
+      this.renderer.setAnimationLoop(null);
+    }
     this.running = true;
-    this.lastT = performance.now();
+    this.lastT = now;
+    this.lastTick = now;
     this.renderer.setAnimationLoop(this.tick);
   }
 
@@ -455,6 +466,22 @@ export class Stage {
   }
 
   private tick = (now: number) => {
+    this.lastTick = performance.now();
+    // Nothing to see while the stage is hidden (S5, S6, the footer): stop drawing. Showing it
+    // again calls invalidate().
+    if (!this.visible) {
+      this.stop();
+      return;
+    }
+    try {
+      this.frame(now);
+    } catch (err) {
+      // One bad frame must not end the show: report it (a few times) and carry on.
+      if (this.tickErrors++ < 3) console.error('Stage frame failed:', err);
+    }
+  };
+
+  private frame(now: number): void {
     const dtMs = Math.min(100, now - this.lastT);
     this.lastT = now;
     const dt = dtMs / 1000;
@@ -493,7 +520,7 @@ export class Stage {
 
     if (this.monitor.push(dtMs, now)) this.stepDown();
     if (!moving && !idle && this.busy === 0 && !this.anchor) this.stop();
-  };
+  }
 
   /**
    * Uploads changed label surfaces straight from their canvases. They are CPU-backed

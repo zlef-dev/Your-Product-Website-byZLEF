@@ -99,6 +99,7 @@ export async function startStage(opts: {
     resetSpin: () => stage.resetSpin(),
     ensureLineup: () => void loadExtras(stage),
     setPointer: (x, y) => stage.setPointer(x, y),
+    wake: () => stage.invalidate(),
     sticker: (job) => {
       stage.surfaces.stickSticker(job);
       stage.invalidate();

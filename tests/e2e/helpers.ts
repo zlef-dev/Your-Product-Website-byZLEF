@@ -75,5 +75,6 @@ declare global {
     __stageFrames?: () => number;
     __stageEnvironment?: () => boolean;
     __stageTarget?: () => { wash: number; rise: number; lineup: number };
+    __timelineCheck?: () => { time: number; proxy: number; briefMode: boolean; diffs: string[] };
   }
 }

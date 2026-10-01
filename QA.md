@@ -10,7 +10,7 @@ Everything here was run on the build in this repository on 2026-09-30, on Window
 | Lint                            | `npm run lint`                                                  | 0 errors, 0 warnings                                                  |
 | Unit tests (Vitest)             | `npm run test`                                                  | 75 passed in 5 files                                                  |
 | Build                           | `npm run build`                                                 | passes                                                                |
-| End-to-end (Playwright)         | `npm run test:e2e`                                              | 64 passed, 2 skipped (Chromium and WebKit; Firefox not runnable here) |
+| End-to-end (Playwright)         | `npm run test:e2e`                                              | 70 passed, 2 skipped (Chromium and WebKit; Firefox not runnable here) |
 
 ### Unit tests (`tests/unit/`)
 
@@ -20,7 +20,7 @@ Text fitting (one/two lines, balanced breaks, never overflowing, 32-character na
 
 Every test fails on any console error or warning, or uncaught page error. They run against production builds served with the production headers (the CSP from `build/headers.ts`). Three builds are served: with a test Web3Forms key, without a key, and fully configured (studio name, email, site URL and social links set through the optional `VITE_*` overrides in `src/config.ts`).
 
-- **Home:** hero renders; typing a brand updates the live region, tab title, footer headline, brief heading and form prefill; choosing a colour updates `--brand` and `--brand-ink`; "Download your can" produces a PNG; the can turns by keyboard and buttons; "Start a brief" moves focus to the brief heading; the progress strip opens a `<nav>` scene index whose links move focus; the skip link is the first tab stop; no request leaves the site before a brief is sent; `/#brief` lands on the brief and the progress label says so; after loading on `#brief`, scrolling back up still drives the stage (no frozen launch wash); Tab reaches the footer through the pinned scenes with no trap and focus always on screen; the stage keeps rendering, with its reflections, after a lost and restored WebGL context.
+- **Home:** hero renders; typing a brand updates the live region, tab title, footer headline, brief heading and form prefill; choosing a colour updates `--brand` and `--brand-ink`; "Download your can" produces a PNG; the can turns by keyboard and buttons; "Start a brief" moves focus to the brief heading; the progress strip opens a `<nav>` scene index whose links move focus; the skip link is the first tab stop; no request leaves the site before a brief is sent; `/#brief` lands on the brief and the progress label says so; after loading on `#brief`, scrolling back up still drives the stage (no frozen launch wash); the stage renders on demand (no frames while a settled scene is untouched, drawing again on the next scroll); the render loop restarts if it dies; coming back up from the very bottom leaves the stage consistent with the scroll position (a debug probe re-renders the timeline from scratch and compares); Tab reaches the footer through the pinned scenes with no trap and focus always on screen; the stage keeps rendering, with its reflections, after a lost and restored WebGL context.
 - **Form:** errors are text linked with `aria-describedby`, summarised at the top of the step, focus goes to the first invalid field; validation waits for blur; steps change by keyboard with focus on the legend and "Step 2 of 4: The website" announced; the price note exists once and shows only in the details step; mocked Web3Forms success (payload checked) shows the success message and job number; a refusal and a dropped connection each show the error and keep every field; without a key, "Send brief" opens a mailto draft with the whole brief and "Copy brief" appears.
 - **Configured site:** title, canonical, `og:url`, `og:image`, `twitter:image` and `og:site_name` use the configured values; JSON-LD carries name, url, email, image, address and `sameAs` and no price; `sitemap.xml` lists both pages and `robots.txt` points to it; the footer shows the email with a working copy button and the social links; the mailto fallback is addressed to the studio.
 - **Fallbacks:** reduced-motion emulation gives no pins, no Lenis, all process steps and line-up captions on the page, an instant print and no intro strip; with `getContext` stubbed to return null for WebGL, the SVG can shows, prints, takes over the page and downloads a PNG.
@@ -39,10 +39,10 @@ Every test fails on any console error or warning, or uncaught page error. They r
 
 | Preset  | Performance | Accessibility | Best Practices | SEO | FCP   | LCP   | TBT    | CLS | Speed Index |
 | ------- | ----------- | ------------- | -------------- | --- | ----- | ----- | ------ | --- | ----------- |
-| Desktop | **94**      | 100           | 100            | 100 | 0.6 s | 0.8 s | 170 ms | 0   | 1.4 s       |
-| Mobile  | **73**      | 100           | 100            | 100 | 2.2 s | 3.2 s | 720 ms | 0   | 2.7 s       |
+| Desktop | **93**      | 100           | 100            | 100 | 0.6 s | 0.8 s | 190 ms | 0   | 1.2 s       |
+| Mobile  | **69**      | 100           | 100            | 100 | 2.1 s | 3.4 s | 880 ms | 0   | 2.7 s       |
 
-Both meet the targets. Scores move between runs: over the final batches desktop was 94–95 and mobile 65–73 (one desktop batch while the machine was busy scored 79). The mobile median crossed 70 only after the last fixes below, so expect it to sit near the line.
+Desktop meets the target. Mobile sits right at the 70 line and moves between runs: across the final batches desktop was 93–95 and mobile 65–73 (73 in one batch, 69 in the last), so treat it as roughly 70, not a guaranteed pass. One desktop batch while the machine was busy scored 79.
 
 What moved the numbers (desktop TBT went from 1,530 ms to 170 ms, mobile from 3,280 ms to 720 ms):
 
@@ -66,12 +66,20 @@ Not done: subsetting the variable font (needs Python fonttools, not installed he
 
 | CPU          | Frames | p50     | p95     | p99     | Worst  | > 33 ms | > 50 ms | Long tasks (> 50 ms) | Longest | > 200 ms |
 | ------------ | ------ | ------- | ------- | ------- | ------ | ------- | ------- | -------------------- | ------- | -------- |
-| 1×           | 815    | 16.7 ms | 16.8 ms | 16.8 ms | 33 ms  | 2       | 0       | 0                    | none    | 0        |
-| 4× throttled | 811    | 16.7 ms | 16.8 ms | 33.3 ms | 100 ms | 10      | 2       | 2                    | 117 ms  | 0        |
+| 1×           | 812    | 16.7 ms | 16.8 ms | 16.8 ms | 33 ms  | 1       | 0       | 0                    | none    | 0        |
+| 4× throttled | 805    | 16.7 ms | 16.8 ms | 33.3 ms | 117 ms | 11      | 2       | 2                    | 125 ms  | 0        |
 
-p95 under 4× throttling is 16.8 ms (target: under 33 ms), and no task over 200 ms occurs anywhere on the page.
+p95 under 4× throttling is 16.8 ms (target: under 33 ms), and no task over 200 ms occurs anywhere on the page. (One earlier unthrottled run showed a single 433 ms frame at the very first wheel tick with no long task, a one-off GPU or compositor stall at the start of the scroll; it did not repeat in the reruns.)
 
 ## Audit pass
+
+**Reported again by the owner after the first fix:** on the dev server (`localhost:5173`), scrolling to the very bottom and back up could leave the stage showing the end of the process scene (full-screen brand-colour wash, no products) while the page text was on an earlier scene. I could not reproduce it: 14 + 8 randomised runs (fast and slow wheel, End/Home/PageUp/Arrow keys, scene-index jumps, window resizes and `visibilitychange`, classic Windows scrollbars at 1905–1911 px wide, both the production build and the dev server) all kept the stage consistent with the scroll position, checked by re-rendering the timeline from scratch and comparing every value. Reading the code did turn up real weaknesses that would produce exactly this symptom, so I removed them rather than guess:
+
+- **A frame that throws killed the render loop for good.** three.js stops requesting frames if anything inside its callback throws, while the stage's `running` flag stayed true, so nothing could restart it: the canvas froze on its last frame (the end-of-process wash) while the DOM kept scrolling. Frames now run inside a try/catch (errors are logged, three at most), and a watchdog restarts a loop that has stopped ticking. The director wakes the stage on every scroll update, so even a dead loop revives on the next scroll.
+- **The loop never actually stopped.** `damp()` iterated GSAP's `_gsap` bookkeeping property as if it were a stage value, so "still moving" was always true. The page rendered 60 frames a second forever, including while the stage was hidden at the footer. Fixed: the stage now draws only while something changes, and not at all while hidden (verified: 0 frames in 2 s on an untouched scene, drawing again immediately on a scroll nudge).
+- **`?debug` exposes `window.__timelineCheck()`** (re-renders the timeline from scratch and lists any stage value that differs from the live one) so a drift can be caught on a real machine.
+
+If it still happens: open `http://localhost:5173/?debug`, reproduce it, then paste the console output of `__timelineCheck()` and any red errors.
 
 **Found by the owner, fixed:** after loading the page on `#brief` (which "Start a brief" puts in the URL), the stage froze at the end of the process scene: a full-screen brand-coloured wash with no products in the line-up scene, and the same wash even at the top of the page. Cause: my own deep-link fix called `gsap.killTweensOf` on the tween that smooths scroll into timeline time, so the timeline stopped following the scroll for the rest of the session. I had tested where a deep link landed, not that scrolling still worked afterwards. Fixed, covered by a regression test, and the deep-link jump now also stands down if the visitor has already scrolled away from where it landed (a scrollbar drag fires no wheel or key event).
 

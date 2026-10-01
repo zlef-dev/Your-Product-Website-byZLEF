@@ -101,6 +101,10 @@ export function damp(current: StageState, target: StageState, dt: number, rate =
   for (const key of Object.keys(target) as Array<keyof StageState>) {
     const t = target[key];
     const c = current[key];
+    // GSAP decorates the objects it tweens with a `_gsap` bookkeeping property. It is not a
+    // stage value: treating it as one made `moving` true forever, so the render loop never
+    // stopped (and never really rendered on demand).
+    if (typeof t !== 'number' || typeof c !== 'number') continue;
     if (DISCRETE.has(key)) {
       current[key] = t;
       continue;
